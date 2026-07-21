@@ -1,0 +1,13 @@
+name: OSSM Interactive
+description: Connects StashApp to OSSM-Sauce and syncs Funscripts.
+version: 1.1
+url: https://github.com/kennedyr/stashapp-plugins
+ui:
+  javascript:
+    - main.js
+
+settings:
+  serverUrl:
+    type: STRING
+    displayName: Server URL
+    description: The address of your OSSM Sauce WS server (e.g. ws://localhost:12345)
