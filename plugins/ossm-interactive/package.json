@@ -1,5 +1,5 @@
 {
-  "name": "ossm-interactive",
+  "name": "@stashapp-plugins/ossm-interactive",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@tsconfig/vite-react": "^8.1.1",
+    "@types/video.js": "^7.3.58",
     "typescript": "~6.0.2",
     "vite": "^8.1.1"
   }
