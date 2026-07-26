@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "customConditions": ["source"],
+    "lib": ["dom"],
     "composite": true
   }
 }
