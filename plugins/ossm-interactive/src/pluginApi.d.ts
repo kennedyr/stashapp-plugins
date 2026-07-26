@@ -791,6 +791,10 @@ declare namespace PluginApi {
   };
   type PatchableComponentNames = keyof typeof components | string;
   namespace utils {
+    namespace InteractiveUtils {
+      function getPlayer(): VideoJsPlayer | undefined;
+      interactiveClientProvider: IInteractiveClientProvider | undefined;
+    }
     namespace NavUtils {
       function makePerformerScenesUrl(...args: any[]): any;
       function makePerformerImagesUrl(...args: any[]): any;
