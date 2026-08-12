@@ -220,27 +220,8 @@ importers:
         specifier: ^7.0.2
         version: 7.0.2
 
-  plugins/lib:
-    dependencies:
-      zod:
-        specifier: ^4.4.3
-        version: 4.4.3
-    devDependencies:
-      '@tsconfig/node20':
-        specifier: ^20.1.9
-        version: 20.1.9
-      '@types/node':
-        specifier: ^20.19.43
-        version: 20.19.43
-      tsup:
-        specifier: ^8.5.1
-        version: 8.5.1(postcss@8.5.20)(typescript@7.0.2)(yaml@2.9.0)
-
   plugins/ossm-interactive:
     devDependencies:
-      '@tsconfig/node20':
-        specifier: ^20.1.9
-        version: 20.1.9
       '@tsconfig/recommended':
         specifier: ^1.0.13
         version: 1.0.13
@@ -581,9 +562,6 @@ packages:
 
   '@tsconfig/node16@1.0.4':
     resolution: {integrity: sha512-vxhUy4J8lyeyinH7Azl1pdd43GJhZH/tP2weN8TntQblOY+A0XbT8DJk1/oCPuOOyg/Ja757rG0CgHcWC8OfMA==}
-
-  '@tsconfig/node20@20.1.9':
-    resolution: {integrity: sha512-IjlTv1RsvnPtUcjTqtVsZExKVq+KQx4g5pCP5tI7rAs6Xesl2qFwSz/tPDBC4JajkL/MlezBu3gPUwqRHl+RIg==}
 
   '@tsconfig/recommended@1.0.13':
     resolution: {integrity: sha512-sySRuBfMKyKO/j2ZAhR8kSembhjuPEV4Ra3AHtmWLq51+iGaudr45crPSzNC5b7/Ctrh9dfUpBuTlYrH6rM58Q==}
@@ -1016,9 +994,6 @@ packages:
     resolution: {integrity: sha512-Ux4ygGWsu2c7isFWe8Yu1YluJmqVhxqK2cLXNQA5AcC3QfbGNpM7fu0Y8b/z16pXLnFxZYvWhd3fhBY9DLmC6Q==}
     engines: {node: '>=6'}
 
-  zod@4.4.3:
-    resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
-
 snapshots:
 
   '@cspotcode/source-map-support@0.8.1':
@@ -1204,8 +1179,6 @@ snapshots:
   '@tsconfig/node14@1.0.3': {}
 
   '@tsconfig/node16@1.0.4': {}
-
-  '@tsconfig/node20@20.1.9': {}
 
   '@tsconfig/recommended@1.0.13': {}
 
@@ -1597,5 +1570,3 @@ snapshots:
     optional: true
 
   yn@3.1.1: {}
-
-  zod@4.4.3: {}

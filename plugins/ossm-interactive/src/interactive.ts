@@ -2,6 +2,8 @@ import type { IDeviceSettings, IInteractiveClient } from "./StashInterfaces";
 import type { VideoJsPlayer } from "video.js";
 import { WebSocketClient } from "./web_socket_client";
 
+export const PLUGIN_ID = "ossm-interactive";
+
 // Bi Directional communication
 //
 // Stash -> OSSM
@@ -56,18 +58,22 @@ export class OssmInteractive implements IInteractiveClient {
 
   // This is expected to exist by Stash
   public get handyKey() {
+    console.log('handyKey()')
     return "N/A";
   }
 
   public get connected() {
+    console.log('connected()')
     return this.wsClient?.connected ?? false;
   }
 
   public get playing() {
+    console.log('playing()')
     return this._playing;
   }
 
   public async connect() {
+    console.log('connect()')
     this.videoPlayer = window.PluginApi.utils.InteractiveUtils.getPlayer();
     const client = new WebSocketClient(this.wsUri, {
       onMessage: (message) => {
@@ -112,6 +118,7 @@ export class OssmInteractive implements IInteractiveClient {
   }
 
   public async uploadScript(funscriptUrl: string, apiKey?: string) {
+    console.log('uploadScript()')
     if (!(this.connected && funscriptUrl)) {
       return;
     }
@@ -132,14 +139,17 @@ export class OssmInteractive implements IInteractiveClient {
 
   // Gets the offset, in milliseconds, between the Handy and the HandyFeeling servers.
   public async sync() {
+    console.log('sync()')
     return this.wsClient?.estimatedLatency ?? 0;
   }
 
   public async configure(config: Partial<IDeviceSettings>) {
+    console.log('configure(): ', config)
     this._scriptOffset = config.scriptOffset ?? config.offset ?? this._scriptOffset;
   }
 
   public async play(position: number) {
+    console.log('play()')
     this.wsClient?.send({
       event: "play",
       properties: {
@@ -150,6 +160,7 @@ export class OssmInteractive implements IInteractiveClient {
   }
 
   seeked(position: number) {
+    console.log('seeked()')
     this.wsClient?.send({
       event: "seek",
       properties: {
@@ -159,6 +170,7 @@ export class OssmInteractive implements IInteractiveClient {
   }
 
   ended() {
+    console.log('ended()')
     this.wsClient?.send({
       event: "end",
       properties: {}
@@ -166,6 +178,7 @@ export class OssmInteractive implements IInteractiveClient {
   }
 
   public async pause() {
+    console.log('pause()')
     this.wsClient?.send({
       event: "pause",
       properties: {}
@@ -174,6 +187,7 @@ export class OssmInteractive implements IInteractiveClient {
   }
 
   public async ensurePlaying(position: number) {
+    console.log('ensurePlaying()')
     if (this._playing) {
       return;
     }
@@ -181,10 +195,11 @@ export class OssmInteractive implements IInteractiveClient {
   }
 
   public async setLooping(looping: boolean) {
+    console.log('setLooping()')
     this.wsClient?.send({
       event: "loop",
       properties: {
-        loop: looping
+        looping: looping
       }
     });
   }

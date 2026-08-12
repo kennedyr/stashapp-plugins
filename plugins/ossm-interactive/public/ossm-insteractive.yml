@@ -1,10 +1,10 @@
-name: OSSM Interactive
+name: ossm-interactive
 description: Connects StashApp to OSSM-Sauce and syncs Funscripts.
 version: 1.1
 url: https://github.com/kennedyr/stashapp-plugins
 ui:
   javascript:
-    - main.js
+    - main.mjs
 
 settings:
   serverUrl:
