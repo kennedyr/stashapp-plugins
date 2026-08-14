@@ -1,6 +1,6 @@
 import type { IDeviceSettings, IInteractiveClient } from "./StashInterfaces";
-import type { VideoJsPlayer } from "video.js";
 import { WebSocketClient } from "./web_socket_client";
+import { VideoPlayerInterface } from "./video_player";
 
 export const PLUGIN_ID = "ossm-interactive";
 
@@ -38,89 +38,80 @@ export const PLUGIN_ID = "ossm-interactive";
 // ACK Command
 // _on_command_completed
 
-// Video Player
-//     this.videoPlayer?.play()
-//     this.videoPlayer?.currentTime()
-//     this.videoPlayer?.currentTime(10)
-//     this.videoPlayer?.pause()
+//   player_state = {
+//   videoUrl: undefined,
+//   funscriptUrl: undefined,
+//   playing: false,
+//   time: 0,
+//   duration: 0,
+//   looping: false
+// }
 
 export class OssmInteractive implements IInteractiveClient {
-  wsUri = "ws://127.0.0.1/";
-  videoPlayer?: VideoJsPlayer;
+  wsUri = "ws://127.0.0.1:9009";
+  videoPlayer?: VideoPlayerInterface;
   wsClient?: WebSocketClient;
 
-  _playing: boolean = false;
+  devicePlaying: boolean = false;
+  funscriptUrl?: string;
   _scriptOffset: number = 0;
 
   constructor(_handyKey: string, scriptOffset: number) {
     this._scriptOffset = scriptOffset;
+
+    PluginApi.Event.addEventListener("stash:location", (e) => {
+      console.debug("[interactive] stash:location changed", e)
+      const path = e.detail?.data.location.pathname ?? "";
+      const idRegExp = /.*\/scenes\/(\d+)/;
+      if (idRegExp.test(path)) {
+        // this is a scene page
+        this.ensureConnected();
+      }
+      console.debug("[interactive] stash:location changed", e.detail?.data.location.pathname)
+    });
+
+    window.addEventListener("pagehide", () => {
+      console.debug(`[interactive] onPagehide`);
+      this.wsClient?.close()
+      this.videoPlayer?.deinitializeHooks()
+    });
+
+    window.addEventListener("pageshow", (event) => {
+      if (event.persisted) {
+        console.debug(`[interactive] onPageshow`);
+        this.wsClient?.connect()
+        this.videoPlayer?.initializeHooks()
+      }
+    });
   }
 
   // This is expected to exist by Stash
   public get handyKey() {
-    console.log('handyKey()')
-    return "N/A";
+    return String(Date.now());
   }
 
   public get connected() {
-    console.log('connected()')
     return this.wsClient?.connected ?? false;
   }
 
   public get playing() {
-    console.log('playing()')
-    return this._playing;
+    return this.devicePlaying;
+  }
+
+  public async configure(config: Partial<IDeviceSettings>) {
+    this._scriptOffset = config.scriptOffset ?? config.offset ?? this._scriptOffset;
   }
 
   public async connect() {
-    console.log('connect()')
-    this.videoPlayer = window.PluginApi.utils.InteractiveUtils.getPlayer();
-    const client = new WebSocketClient(this.wsUri, {
-      onMessage: (message) => {
-        switch (message.command) {
-          case "play":
-            this.videoPlayer?.play();
-            break;
-          case "pause":
-            this.videoPlayer?.pause();
-            break;
-          case "seek":
-            var props = message.properties;
-            this.videoPlayer?.currentTime(props["currentTime"]);
-            break;
-          case "loop":
-            var props = message.properties;
-            this.videoPlayer?.loop(props["looping"])
-            break;
-        }
-      }
-    });
-
-    client.onMessage = (message) => {
-      console.log('Received:', message);
-    };
-
-    this.videoPlayer?.on('seeked', () => {
-      this.seeked(this.videoPlayer?.currentTime() ?? 0);
-    })
-    this.videoPlayer?.on('ended', () => {
-      this.ended();
-    })
-
-    //  buffering
-    this.videoPlayer?.on('waiting', () => {
-      this.pause();
-    })
-    this.videoPlayer?.on('playing', () => {
-      this.play(this.videoPlayer?.currentTime() ?? 0);
-    })
-
   }
 
   public async uploadScript(funscriptUrl: string, apiKey?: string) {
-    console.log('uploadScript()')
     if (!(this.connected && funscriptUrl)) {
       return;
+    }
+
+    if (this.videoPlayer && !this.videoPlayer?.connected) {
+      this.videoPlayer.initializeHooks();
     }
 
     if (typeof apiKey !== "undefined" && apiKey !== "") {
@@ -139,28 +130,22 @@ export class OssmInteractive implements IInteractiveClient {
 
   // Gets the offset, in milliseconds, between the Handy and the HandyFeeling servers.
   public async sync() {
-    console.log('sync()')
-    return this.wsClient?.estimatedLatency ?? 0;
-  }
-
-  public async configure(config: Partial<IDeviceSettings>) {
-    console.log('configure(): ', config)
-    this._scriptOffset = config.scriptOffset ?? config.offset ?? this._scriptOffset;
+    return this.wsClient?.estimatedLatency ?? 1;
   }
 
   public async play(position: number) {
-    console.log('play()')
-    this.wsClient?.send({
-      event: "play",
-      properties: {
-        currentTime: position
-      }
-    });
-    this._playing = true;
+    if (this.wsClient) {
+      this.wsClient.send({
+        event: "play",
+        properties: {
+          currentTime: position
+        }
+      });
+      this.devicePlaying = true;
+    }
   }
 
   seeked(position: number) {
-    console.log('seeked()')
     this.wsClient?.send({
       event: "seek",
       properties: {
@@ -170,7 +155,6 @@ export class OssmInteractive implements IInteractiveClient {
   }
 
   ended() {
-    console.log('ended()')
     this.wsClient?.send({
       event: "end",
       properties: {}
@@ -178,24 +162,23 @@ export class OssmInteractive implements IInteractiveClient {
   }
 
   public async pause() {
-    console.log('pause()')
-    this.wsClient?.send({
-      event: "pause",
-      properties: {}
-    });
-    this._playing = false;
+    if (this.wsClient) {
+      this.wsClient.send({
+        event: "pause",
+        properties: {}
+      });
+      this.devicePlaying = false;
+    }
   }
 
   public async ensurePlaying(position: number) {
-    console.log('ensurePlaying()')
-    if (this._playing) {
+    if (this.devicePlaying) {
       return;
     }
     await this.play(position);
   }
 
   public async setLooping(looping: boolean) {
-    console.log('setLooping()')
     this.wsClient?.send({
       event: "loop",
       properties: {
@@ -203,23 +186,45 @@ export class OssmInteractive implements IInteractiveClient {
       }
     });
   }
+
+  ensureConnected() {
+    if (!this.videoPlayer) {
+      this.videoPlayer = new VideoPlayerInterface({
+        // onPlay: this.play,
+        // onPause: this.pause,
+        // onSeeked: this.seeked,
+        onEnded: this.ended,
+      });
+    } else {
+      this.videoPlayer.initializeHooks();
+    }
+
+    if (!this.wsClient) {
+      this.wsClient = new WebSocketClient(this.wsUri, {
+        onMessage: (message) => {
+          if ('command' in message) {
+            switch (message.command) {
+              case "play":
+                this.videoPlayer?.play();
+                break;
+              case "pause":
+                this.videoPlayer?.pause();
+                break;
+              case "seek":
+                var props = message.properties;
+                this.videoPlayer?.seek(props["currentTime"]);
+                break;
+              case "loop":
+                var props = message.properties;
+                this.videoPlayer?.loop(Boolean(props["looping"]))
+                break;
+            }
+          }
+        }
+      });
+    } else {
+      this.wsClient.attemptReconnect();
+    }
+  }
 }
 
-
-
-// (function () {
-//   "use strict";
-//   const PluginApi = window.PluginApi;
-
-//   PluginApi.Event.addEventListener("stash:location", async (e) => {
-//     //TODO: ensurePaused()
-
-//     // const path = e.detail.data.location.pathname;
-//     // const idRegExp = /.*\/scenes\/(\d+)/;
-//     // if (idRegExp.test(path)) {
-
-//     // }
-//   });
-// })();
-
-// window.PluginApi.utils.InteractiveUtils.getPlayer()?.currentTime() 
