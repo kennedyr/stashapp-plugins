@@ -24,6 +24,7 @@ export class VideoPlayerInterface {
 
     this.initializeHooks();
   }
+
   public get connected() {
     return !!this.videoPlayer;
   }
@@ -57,10 +58,7 @@ export class VideoPlayerInterface {
     if (this.videoPlayer) {
       this.deinitializeHooks();
     }
-    var ok = this._initializeHooks();
-    if (!ok) {
-      setTimeout(this._initializeHooks, 1000);
-    }
+    this._initializeHooks();
   }
 
   public play() {
@@ -79,7 +77,11 @@ export class VideoPlayerInterface {
     this.videoPlayer?.loop(val)
   }
 
-  _initializeHooks() {
+  _initializeHooks(retry: number = 0) {
+    if (retry >= 3) {
+      console.error("[videointerface] video player initialize timed out.")
+      return
+    }
     this.videoPlayer = window.PluginApi.utils.InteractiveUtils.getPlayer();
     if (this.videoPlayer) {
       this.videoPlayer?.on('play', () => {
@@ -99,20 +101,21 @@ export class VideoPlayerInterface {
       this.videoPlayer?.on('seeked', () => {
         this.onSeeked(this.currentTime);
       });
-      this.videoPlayer?.on('ended', this.onEnded)
-      return true;
+      this.videoPlayer?.on('ended', () => this.onEnded())
     }
     console.error("[videointerface] video player not found.")
-    return false;
+    setTimeout(this._initializeHooks.bind(this, retry + 1), 1000);
   }
 
   deinitializeHooks() {
     console.debug('[videointerface] deinitializeVideoPlayerHooks()')
     if (this.videoPlayer) {
+      this.videoPlayer.off('play');
+      this.videoPlayer.off('playing');
+      this.videoPlayer.off('pause');
+      this.videoPlayer.off('waiting');
       this.videoPlayer.off('seeked');
       this.videoPlayer.off('ended');
-      this.videoPlayer.off('waiting');
-      this.videoPlayer.off('playing');
       this.videoPlayer = undefined;
     }
   }

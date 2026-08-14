@@ -103,15 +103,12 @@ export class OssmInteractive implements IInteractiveClient {
   }
 
   public async connect() {
+    this.ensureConnected();
   }
 
   public async uploadScript(funscriptUrl: string, apiKey?: string) {
     if (!(this.connected && funscriptUrl)) {
       return;
-    }
-
-    if (this.videoPlayer && !this.videoPlayer?.connected) {
-      this.videoPlayer.initializeHooks();
     }
 
     if (typeof apiKey !== "undefined" && apiKey !== "") {
@@ -123,7 +120,9 @@ export class OssmInteractive implements IInteractiveClient {
     this.wsClient?.send({
       event: "open",
       properties: {
-        funscriptUrl: funscriptUrl
+        funscriptUrl: funscriptUrl,
+        currentTime: this.videoPlayer?.currentTime,
+        duration: this.videoPlayer?.duration
       }
     });
   }
@@ -138,7 +137,8 @@ export class OssmInteractive implements IInteractiveClient {
       this.wsClient.send({
         event: "play",
         properties: {
-          currentTime: position
+          currentTime: position,
+          duration: this.videoPlayer?.duration
         }
       });
       this.devicePlaying = true;
@@ -149,7 +149,8 @@ export class OssmInteractive implements IInteractiveClient {
     this.wsClient?.send({
       event: "seek",
       properties: {
-        currentTime: position
+        currentTime: position,
+        duration: this.videoPlayer?.duration
       }
     });
   }
@@ -157,7 +158,10 @@ export class OssmInteractive implements IInteractiveClient {
   ended() {
     this.wsClient?.send({
       event: "end",
-      properties: {}
+      properties: {
+        currentTime: this.videoPlayer?.currentTime,
+        duration: this.videoPlayer?.duration
+      }
     });
   }
 
@@ -165,7 +169,10 @@ export class OssmInteractive implements IInteractiveClient {
     if (this.wsClient) {
       this.wsClient.send({
         event: "pause",
-        properties: {}
+        properties: {
+          currentTime: this.videoPlayer?.currentTime,
+          duration: this.videoPlayer?.duration
+        }
       });
       this.devicePlaying = false;
     }
@@ -182,7 +189,9 @@ export class OssmInteractive implements IInteractiveClient {
     this.wsClient?.send({
       event: "loop",
       properties: {
-        looping: looping
+        looping: looping,
+        currentTime: this.videoPlayer?.currentTime,
+        duration: this.videoPlayer?.duration
       }
     });
   }
