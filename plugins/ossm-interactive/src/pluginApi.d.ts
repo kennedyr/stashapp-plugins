@@ -1123,6 +1123,22 @@ declare namespace PluginApi {
   namespace register {
     function route(path: string, component: React.FC<any>): void;
   }
+
+  namespace Event {
+    type StashEvent = CustomEventInit<{
+      event: string;
+      id?: any;
+      data?: any;
+    }>
+
+    type StashEventListener = {
+        (evt: StashEvent): void;
+      } | {
+          handleEvent(object: StashEvent): void;
+      }
+    function addEventListener(type: 'stash:location', callback: StashEventListener | null, options?: AddEventListenerOptions | boolean): void;
+    function removeEventListener(type: 'stash:location', callback: StashEventListener | null, options?: EventListenerOptions | boolean): void;
+  }
 }
 
 declare module "mousetrap-pause" {
