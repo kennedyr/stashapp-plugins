@@ -25,7 +25,6 @@ export class WebSocketClient {
   _connected: boolean = false;
   _estimatedLatency: number = 0;
 
-  // Override these methods in your application
   onConnect: () => void;
   onDisconnect: (event: CloseEvent) => void;
   onMessage: (message: any) => void;
@@ -38,7 +37,7 @@ export class WebSocketClient {
       heartbeatInterval: options.heartbeatInterval || 30000,
       heartbeatTimeout: options.heartbeatTimeout || 10000,
       reconnectInterval: options.reconnectInterval || 5000,
-      maxReconnectAttempts: options.maxReconnectAttempts || 10,
+      maxReconnectAttempts: options.maxReconnectAttempts || 5,
     };
 
     this.ws = null;
@@ -48,21 +47,14 @@ export class WebSocketClient {
     this.isIntentionallyClosed = false;
     this.pendingPings = new Map();
 
-    this.onConnect = options.onConnect || function () { };
-    this.onDisconnect = options.onDisconnect || function () { };
-    this.onMessage = options.onMessage || function () { };
-    this.onError = options.onError || function () { };
-    this.onMaxReconnectAttempts = options.onMaxReconnectAttempts || function () { };
+    const noop = function () { };
+    this.onConnect = options.onConnect ?? noop;
+    this.onDisconnect = options.onDisconnect ?? noop;
+    this.onMessage = options.onMessage ?? noop;
+    this.onError = options.onError ?? noop;
+    this.onMaxReconnectAttempts = options.onMaxReconnectAttempts ?? noop;
 
     this.connect();
-    window.addEventListener("pagehide", () => {
-      this.close()
-    });
-    window.addEventListener("pageshow", (event) => {
-      if (event.persisted) {
-        this.connect()
-      }
-    });
   }
 
   public get connected() {
@@ -77,11 +69,11 @@ export class WebSocketClient {
     // Reset intentional close flag
     this.isIntentionallyClosed = false;
 
-    console.log(`Connecting to ${this.url}...`);
+    console.info(`[websocket] Connecting to ${this.url}...`);
     this.ws = new WebSocket(this.url);
 
     this.ws.onopen = () => {
-      console.log('WebSocket connected');
+      console.info('[websocket] Connected to ' + this.url);
       this._connected = true;
       this.reconnectAttempts = 0;
       this.startHeartbeat();
@@ -89,16 +81,18 @@ export class WebSocketClient {
     };
 
     this.ws.onmessage = (event) => {
+      console.debug("[websocket] message received:")
+      console.debug(event)
       try {
         const message = JSON.parse(event.data);
         this.handleMessage(message);
       } catch (error) {
-        console.error('Error parsing message:', error);
+        console.error('[websocket] Error parsing message:', error);
       }
     };
 
     this.ws.onclose = (event) => {
-      console.log(`WebSocket closed: ${event.code} - ${event.reason}`);
+      console.info(`[websocket] closed: ${event.code} - ${event.reason}`);
       this._connected = false;
       this.stopHeartbeat();
       this.onDisconnect(event);
@@ -110,42 +104,40 @@ export class WebSocketClient {
     };
 
     this.ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
+      console.error('[websocket] error:', error);
       this.onError(error);
     };
   }
 
   handleMessage(message: any) {
-    // Handle server heartbeat ping
-    if (message.type === 'ping') {
-      // Respond immediately with pong
-      this.send({
-        type: 'pong',
-        id: message.id,
-        timestamp: message.timestamp,
-        clientTime: Date.now()
-      });
-      // Reset heartbeat timeout since we received data
-      this.resetHeartbeatTimeout();
-      return;
-    }
-
-    // Handle server response to our ping
-    if (message.type === 'pong') {
-      const pending = this.pendingPings.get(message.timestamp);
-      if (pending) {
-        clearTimeout(pending.timeoutId);
-        this.pendingPings.delete(message.timestamp);
-        const latency = Date.now() - message.timestamp;
-        this._estimatedLatency = latency;
-        console.log(`Round-trip latency: ${latency}ms`);
-      }
-      this.resetHeartbeatTimeout();
-      return;
-    }
-
-    // Reset timeout on any received message
     this.resetHeartbeatTimeout();
+    if ('type' in message) {
+      // Handle server heartbeat ping
+      if (message.type === 'ping') {
+        // Respond immediately with pong
+        this.send({
+          type: 'pong',
+          id: message.id,
+          timestamp: message.timestamp,
+          clientTime: Date.now()
+        });
+        return;
+      }
+
+      // Handle server response to our ping
+      if (message.type === 'pong') {
+        const pingId = Math.floor(message.timestamp);
+        const pending = this.pendingPings.get(pingId);
+        if (pending) {
+          clearTimeout(pending.timeoutId);
+          this.pendingPings.delete(pingId);
+          const latency = Date.now() - pingId;
+          this._estimatedLatency = latency;
+          console.info(`[websocket] Round-trip latency: ${latency}ms`);
+        }
+        return;
+      }
+    }
 
     // Forward to application handler
     this.onMessage(message);
@@ -188,7 +180,7 @@ export class WebSocketClient {
 
     // Set new timeout - if no data received, assume connection is dead
     this.heartbeatTimeoutTimer = setTimeout(() => {
-      console.log('Heartbeat timeout - connection appears dead');
+      console.info('[websocket] Heartbeat timeout - connection appears dead');
       this.ws?.close(4000, 'Heartbeat timeout');
     }, this.options.heartbeatInterval + this.options.heartbeatTimeout);
   }
@@ -201,14 +193,15 @@ export class WebSocketClient {
     const timestamp = Date.now();
     const ping = {
       type: 'ping',
-      timestamp
+      timestamp,
+      clientTime: timestamp
     };
 
     // Track pending ping with timeout
     const timeoutId = setTimeout(() => {
       if (this.pendingPings.has(timestamp)) {
         this.pendingPings.delete(timestamp);
-        console.log('Ping timeout - no pong received');
+        console.info('[websocket] Ping timeout - no pong received');
       }
     }, this.options.heartbeatTimeout);
 
@@ -220,13 +213,16 @@ export class WebSocketClient {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(data));
     } else {
-      console.warn('Cannot send - WebSocket not open');
+      console.warn('[websocket] Cannot send - WebSocket not open');
     }
   }
 
-  attemptReconnect() {
+  public attemptReconnect() {
+    if (this._connected) return;
+
+    console.debug('[websocket] attemptReconnect()')
     if (this.reconnectAttempts >= this.options.maxReconnectAttempts) {
-      console.log('Max reconnection attempts reached');
+      console.warn('[websocket] Max reconnection attempts reached');
       this.onMaxReconnectAttempts();
       return;
     }
@@ -234,7 +230,7 @@ export class WebSocketClient {
     this.reconnectAttempts++;
     const delay = this.options.reconnectInterval * Math.min(this.reconnectAttempts, 5);
 
-    console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`);
+    console.info(`[websocket] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`);
 
     setTimeout(() => {
       this.connect();
