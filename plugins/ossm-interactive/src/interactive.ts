@@ -201,7 +201,7 @@ export class OssmInteractive implements IInteractiveClient {
       this.videoPlayer = new VideoPlayerInterface({
         // onPlay: this.play,
         // onPause: this.pause,
-        // onSeeked: this.seeked,
+        onSeeked: this.seeked,
         onEnded: this.ended,
       });
     } else {

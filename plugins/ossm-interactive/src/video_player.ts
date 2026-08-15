@@ -5,6 +5,7 @@ type Options = {
   onPlay: (currentTime: number) => void;
   onPause: (currentTime: number) => void;
   onEnded: () => void;
+  reconnectInterval: number;
 }
 
 export class VideoPlayerInterface {
@@ -15,12 +16,16 @@ export class VideoPlayerInterface {
   onPause: (currentTime: number) => void;
   onEnded: () => void;
 
+  reconnectInterval: number;
+
   constructor(options: Partial<Options> = {}) {
     const noop = function () { };
     this.onSeeked = options.onSeeked ?? noop;
     this.onPlay = options.onPlay ?? noop;
     this.onPause = options.onPause ?? noop;
     this.onEnded = options.onEnded ?? noop;
+
+    this.reconnectInterval = options.reconnectInterval || 3000;
 
     this.initializeHooks();
   }
@@ -58,7 +63,7 @@ export class VideoPlayerInterface {
     if (this.videoPlayer) {
       this.deinitializeHooks();
     }
-    this._initializeHooks();
+    setTimeout(this._initializeHooks.bind(this), this.reconnectInterval);
   }
 
   public play() {
@@ -103,8 +108,8 @@ export class VideoPlayerInterface {
       });
       this.videoPlayer?.on('ended', () => this.onEnded())
     }
-    console.error("[videointerface] video player not found.")
-    setTimeout(this._initializeHooks.bind(this, retry + 1), 1000);
+    console.warn("[videointerface] video player not found.")
+    setTimeout(this._initializeHooks.bind(this, retry + 1), this.reconnectInterval);
   }
 
   deinitializeHooks() {
