@@ -211,20 +211,19 @@ export class OssmInteractive implements IInteractiveClient {
     if (!this.wsClient) {
       this.wsClient = new WebSocketClient(this.wsUri, {
         onMessage: (message) => {
+          var props = 'properties' in message ? message["properties"] : {};
           if ('command' in message) {
             switch (message.command) {
               case "play":
-                this.videoPlayer?.play();
+                this.videoPlayer?.play(props["currentTime"]);
                 break;
               case "pause":
-                this.videoPlayer?.pause();
+                this.videoPlayer?.pause(props["currentTime"]);
                 break;
               case "seek":
-                var props = message.properties;
                 this.videoPlayer?.seek(props["currentTime"]);
                 break;
               case "loop":
-                var props = message.properties;
                 this.videoPlayer?.loop(Boolean(props["looping"]))
                 break;
             }

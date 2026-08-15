@@ -66,11 +66,17 @@ export class VideoPlayerInterface {
     setTimeout(this._initializeHooks.bind(this), this.reconnectInterval);
   }
 
-  public play() {
+  public play(currentTime?: number) {
+    if (currentTime) {
+      this.videoPlayer?.currentTime(currentTime);
+    }
     this.videoPlayer?.play();
   }
 
-  public pause() {
+  public pause(currentTime?: number) {
+    if (currentTime) {
+      this.videoPlayer?.currentTime(currentTime);
+    }
     this.videoPlayer?.pause();
   }
 
