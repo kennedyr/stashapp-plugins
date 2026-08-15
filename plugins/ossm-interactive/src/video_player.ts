@@ -62,7 +62,7 @@ export class VideoPlayerInterface {
     if (this.videoPlayer) {
       this.deinitializeHooks();
     }
-    setTimeout(this._initializeHooks.bind(this), this.reconnectInterval);
+    setTimeout(() => this._initializeHooks(), this.reconnectInterval);
   }
 
   public play(currentTime?: number) {
@@ -114,7 +114,7 @@ export class VideoPlayerInterface {
       this.videoPlayer?.on('ended', () => this.onEnded())
     }
     console.warn("[videointerface] video player not found.")
-    setTimeout(this._initializeHooks.bind(this, retry + 1), this.reconnectInterval);
+    setTimeout(() => this._initializeHooks(retry + 1), this.reconnectInterval);
   }
 
   deinitializeHooks() {
