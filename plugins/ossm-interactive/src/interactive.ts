@@ -4,49 +4,6 @@ import { VideoPlayerInterface } from "./video_player";
 
 export const PLUGIN_ID = "ossm-interactive";
 
-// Bi Directional communication
-//
-// Stash -> OSSM
-// MPV EVENTS
-// match msg.get("event", ""):
-// 	"property-change":
-// 		var prop_name: String = msg.get("name", "")
-// 		var value = msg.get("data")
-// 		match prop_name:
-// 			"pause":
-// 				if value is bool:
-// 					_mpv_pause = value
-// 			"time-pos":
-// 				_mpv_time_pos = value
-// 			"duration":
-// 				_mpv_duration = value
-// 			"filename":
-// 				_mpv_filename = value
-// 				_mpv_received_filename = true
-// 		_mpv_update_state()
-// 	"end-file":
-// 		_mpv_filename = null
-// 		_mpv_received_filename = true
-// 		_mpv_update_state()
-
-
-// OSSM -> Stash
-// {"command": ["set_property", "pause", false]}
-// {"command": ["seek", time_seconds, "absolute"]}
-// {"command": ["set_property", "pause", true]}
-//  
-// ACK Command
-// _on_command_completed
-
-//   player_state = {
-//   videoUrl: undefined,
-//   funscriptUrl: undefined,
-//   playing: false,
-//   time: 0,
-//   duration: 0,
-//   looping: false
-// }
-
 export class OssmInteractive implements IInteractiveClient {
   wsUri = "ws://127.0.0.1:9009";
   videoPlayer?: VideoPlayerInterface;
@@ -60,25 +17,21 @@ export class OssmInteractive implements IInteractiveClient {
     this._scriptOffset = scriptOffset;
 
     PluginApi.Event.addEventListener("stash:location", (e) => {
-      console.debug("[interactive] stash:location changed", e)
       const path = e.detail?.data.location.pathname ?? "";
       const idRegExp = /.*\/scenes\/(\d+)/;
       if (idRegExp.test(path)) {
         // this is a scene page
         this.ensureConnected();
       }
-      console.debug("[interactive] stash:location changed", e.detail?.data.location.pathname)
     });
 
     window.addEventListener("pagehide", () => {
-      console.debug(`[interactive] onPagehide`);
       this.wsClient?.close()
       this.videoPlayer?.deinitializeHooks()
     });
 
     window.addEventListener("pageshow", (event) => {
       if (event.persisted) {
-        console.debug(`[interactive] onPageshow`);
         this.wsClient?.connect()
         this.videoPlayer?.initializeHooks()
       }

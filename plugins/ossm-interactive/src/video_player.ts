@@ -59,7 +59,6 @@ export class VideoPlayerInterface {
   }
 
   public initializeHooks() {
-    console.debug('[videointerface] initializeHooks()')
     if (this.videoPlayer) {
       this.deinitializeHooks();
     }
@@ -119,7 +118,6 @@ export class VideoPlayerInterface {
   }
 
   deinitializeHooks() {
-    console.debug('[videointerface] deinitializeVideoPlayerHooks()')
     if (this.videoPlayer) {
       this.videoPlayer.off('play');
       this.videoPlayer.off('playing');

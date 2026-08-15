@@ -81,8 +81,6 @@ export class WebSocketClient {
     };
 
     this.ws.onmessage = (event) => {
-      console.debug("[websocket] message received:")
-      console.debug(event)
       try {
         const message = JSON.parse(event.data);
         this.handleMessage(message);
@@ -220,7 +218,6 @@ export class WebSocketClient {
   public attemptReconnect() {
     if (this._connected) return;
 
-    console.debug('[websocket] attemptReconnect()')
     if (this.reconnectAttempts >= this.options.maxReconnectAttempts) {
       console.warn('[websocket] Max reconnection attempts reached');
       this.onMaxReconnectAttempts();
