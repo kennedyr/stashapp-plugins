@@ -35,27 +35,51 @@ export class VideoPlayerInterface {
   }
 
   public get playing() {
-    return !!(this.currentTime > 0 && !this.paused && !this.ended && (this.videoPlayer?.readyState() ?? 0) > 2);
+    try {
+      return !!(this.currentTime > 0 && !this.paused && !this.ended && (this.videoPlayer?.readyState() ?? 0) > 2);
+    } catch {
+      return false;
+    }
   }
 
   public get paused() {
-    return this.videoPlayer?.paused() ?? true;
+    try {
+      return this.videoPlayer?.paused() ?? true;
+    } catch {
+      return true;
+    }
   }
 
   public get ended() {
-    return this.videoPlayer?.paused() ?? false;
+    try {
+      return this.videoPlayer?.paused() ?? false;
+    } catch {
+      return false;
+    }
   }
 
   public get currentTime() {
-    return this.videoPlayer?.currentTime() ?? 0.0;
+    try {
+      return this.videoPlayer?.currentTime() ?? 0.0;
+    } catch {
+      return 0.0;
+    }
   }
 
   public get duration() {
-    return this.videoPlayer?.duration() ?? 0.0;
+    try {
+      return this.videoPlayer?.duration() ?? 0.0;
+    } catch {
+      return 0.0;
+    }
   }
 
   public get looping() {
-    return this.videoPlayer?.loop() ?? false;
+    try {
+      return this.videoPlayer?.loop() ?? false;
+    } catch {
+      return false;
+    }
   }
 
   public initializeHooks() {

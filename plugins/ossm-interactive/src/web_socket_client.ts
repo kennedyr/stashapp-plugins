@@ -215,9 +215,11 @@ export class WebSocketClient {
     }
   }
 
-  public attemptReconnect() {
+  public attemptReconnect(resetReconnectAttempts: boolean = false) {
     if (this._connected) return;
 
+    if (resetReconnectAttempts)
+      this.reconnectAttempts = 0;
     if (this.reconnectAttempts >= this.options.maxReconnectAttempts) {
       console.warn('[websocket] Max reconnection attempts reached');
       this.onMaxReconnectAttempts();

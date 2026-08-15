@@ -184,7 +184,7 @@ export class OssmInteractive implements IInteractiveClient {
         }
       });
     } else {
-      this.wsClient.attemptReconnect();
+      this.wsClient.attemptReconnect(true);
     }
   }
 }
