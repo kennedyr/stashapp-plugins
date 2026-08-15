@@ -64,6 +64,7 @@ buildPlugin()
     echo "" >> "$outdir"/index.yml
 }
 
-find ./plugins -mindepth 1 -name *.yml | while read file; do
+# ignore public/ folder
+find ./plugins -mindepth 1 -type d -name public -prune -o -name '*.yml' -print | while read file; do
     buildPlugin "$file"
 done
