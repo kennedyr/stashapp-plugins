@@ -1,4 +1,4 @@
-import type { IInteractiveClient, IInteractiveClientProvider } from './StashInterfaces.js'
+import type { IInteractiveClient, IInteractiveClientProvider } from './StashTypes'
 import { OssmInteractive } from './interactive'
 
 const ossmInteractiveClientProvider: IInteractiveClientProvider = ({

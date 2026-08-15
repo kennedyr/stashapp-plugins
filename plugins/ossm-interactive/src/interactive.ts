@@ -1,4 +1,4 @@
-import type { IDeviceSettings, IInteractiveClient } from "./StashInterfaces";
+import type { IDeviceSettings, IInteractiveClient } from "./StashTypes";
 import { WebSocketClient } from "./web_socket_client";
 import { VideoPlayerInterface } from "./video_player";
 
