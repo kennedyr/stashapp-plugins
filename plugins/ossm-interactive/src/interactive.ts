@@ -13,12 +13,12 @@ export class OssmInteractive implements IInteractiveClient {
   funscriptUrl?: string;
   _scriptOffset: number = 0;
 
-  Toast: ReturnType<typeof window.PluginApi.hooks.useToast>;
+  Toast: ReturnType<typeof window.PluginApi.hooks.useToast> | null;
   
-  constructor(_handyKey: string, scriptOffset: number) {
+  constructor(_handyKey: string, scriptOffset: number, toastRef: ReturnType<typeof window.PluginApi.hooks.useToast> | null) {
     this._scriptOffset = scriptOffset;
 
-    this.Toast = window.PluginApi.hooks.useToast();
+    this.Toast = toastRef;
 
     PluginApi.Event.addEventListener("stash:location", (e) => {
       const path = e.detail?.data.location.pathname ?? "";
@@ -186,12 +186,12 @@ export class OssmInteractive implements IInteractiveClient {
             }
           } else if ('event' in message) {
             if (message.event == "open") {
-              this.Toast.success(`OSSM Opened ${props["title"]}`);
+              this.Toast?.success(`OSSM Opened ${props["title"]}`);
             }
           }
         },
         onConnect: () => {
-          this.Toast.success('OSSM Connected');
+          this.Toast?.success('OSSM Connected');
         }
       });
     } else {
