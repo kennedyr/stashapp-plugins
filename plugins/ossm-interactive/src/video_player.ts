@@ -86,7 +86,7 @@ export class VideoPlayerInterface {
     if (this.videoPlayer) {
       this.deinitializeHooks();
     }
-    setTimeout(() => this._initializeHooks(), this.reconnectInterval);
+    this._timeoutId = setTimeout(() => this._initializeHooks(), this.reconnectInterval);
   }
 
   public play(currentTime?: number) {
@@ -111,11 +111,20 @@ export class VideoPlayerInterface {
     this.videoPlayer?.loop(val)
   }
 
+  _timeoutId?: number;
   _initializeHooks(retry: number = 0) {
+    if (this.videoPlayer) {
+      if (this._timeoutId) {
+        clearTimeout(this._timeoutId);
+      }
+      return;
+    }
+
     if (retry >= 3) {
-      console.error("[videointerface] video player initialize timed out.")
+      console.warn("[videointerface] video player initialize timed out.")
       return
     }
+
     this.videoPlayer = window.PluginApi.utils.InteractiveUtils.getPlayer();
     if (this.videoPlayer) {
       this.videoPlayer?.on('play', () => {
@@ -138,7 +147,7 @@ export class VideoPlayerInterface {
       this.videoPlayer?.on('ended', () => this.onEnded())
     }
     console.warn("[videointerface] video player not found.")
-    setTimeout(() => this._initializeHooks(retry + 1), this.reconnectInterval);
+    this._timeoutId = setTimeout(() => this._initializeHooks(retry + 1), this.reconnectInterval);
   }
 
   deinitializeHooks() {
