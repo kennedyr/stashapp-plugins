@@ -47,7 +47,6 @@ import { OssmInteractive } from './interactive'
     scriptOffset,
   }): IInteractiveClient => {
     const ossmInteractive = new OssmInteractive(handyKey, scriptOffset, toastRef);
-    // @ts-expect-error
     window.ossmInteractiveHandle = ossmInteractive;
     return ossmInteractive;
   };
