@@ -1,62 +1,64 @@
-import type { IInteractiveClient, IInteractiveClientProvider } from './StashTypes'
 import { OssmInteractive } from './interactive'
+import { hackService } from './hack_service'
 
 (function () {
+  const { React, hooks, patch, utils, GQL } = window.PluginApi;
 
-  /** Same green/red banners Stash uses for “Updated scene” etc. (see hooks/Toast.tsx). */
-  let toastRef: ReturnType<typeof window.PluginApi.hooks.useToast> | null = null;
-  let toastRefInstalled = false;
+  let hooksInstalled = false;
+  let ossmProviderInstalled = false;
 
-  /** Must be a stable function identity — defining inside patch.after() remounts every App render and breaks the UI. */
-  function DuplicateResolverStashNotifyMount() {
-    const React = window.PluginApi.React;
-    const toast = window.PluginApi.hooks.useToast();
+  function HackyHookMount() {
+    const toast = hooks.useToast();
+    const { data: stashConfig } = GQL.useConfigurationQuery();
     React.useEffect(
       function () {
-        toastRef = toast;
+        hackService.Toast = toast;
         return function () {
-          toastRef = null;
+          hackService.Toast = null;
         };
       },
       [toast]
     );
+    React.useEffect(
+      function () {
+        hackService.Settings = stashConfig?.configuration ?? null;
+        return function () {
+          hackService.Settings = null;
+        };
+      },
+      [stashConfig]
+    );
     return null;
   }
 
-  function installStashInlineNotifyBridge() {
-    if (toastRefInstalled || typeof window.PluginApi === "undefined") return;
-    if (!window.PluginApi.patch || !window.PluginApi.patch.after || !window.PluginApi.React || !window.PluginApi.hooks || !window.PluginApi.hooks.useToast) return;
-    toastRefInstalled = true;
-    window.PluginApi.patch.after("App", function () {
-      var React = window.PluginApi.React;
-      /** Patch passes afterFn(...originalArgs, renderedTree). Last arg is always App output; arity can be 1 if a before() cleared args. */
+  function installHackyHookMount() {
+    if (hooksInstalled || !patch || !React || !hooks) return;
+
+    hooksInstalled = true;
+    patch.after("App", function (_props: React.PropsWithChildren<unknown>, _: any, _result: React.ReactNode) {
       var prevTree = arguments[arguments.length - 1];
       return React.createElement(
         React.Fragment,
         null,
-        React.createElement(DuplicateResolverStashNotifyMount, null),
+        React.createElement(HackyHookMount, null),
         prevTree
       );
     });
-  }
-
-  installStashInlineNotifyBridge();
-
-  const ossmInteractiveClientProvider: IInteractiveClientProvider = ({
-    handyKey,
-    scriptOffset,
-  }): IInteractiveClient => {
-    const ossmInteractive = new OssmInteractive(handyKey, scriptOffset, toastRef);
-    window.ossmInteractiveHandle = ossmInteractive;
-    return ossmInteractive;
   };
+  installHackyHookMount();
 
-  if (!window.PluginApi.utils.InteractiveUtils) {
-    console.error('InteractiveUtils Not Ready');
-  }
-  if (window.PluginApi.utils.InteractiveUtils.interactiveClientProvider) {
-    console.warn('OssmInteractiveClientProvider Already initialized');
-  }
-  window.PluginApi.utils.InteractiveUtils.interactiveClientProvider = ossmInteractiveClientProvider;
+  function installInteractiveClientProvider() {
+    if (ossmProviderInstalled) return;
 
+    ossmProviderInstalled = true;
+    utils.InteractiveUtils.interactiveClientProvider = ({
+      handyKey,
+      scriptOffset,
+    }) => {
+      const ossmInteractive = new OssmInteractive({ handyKey, scriptOffset });
+      window.ossmInteractiveHandle = ossmInteractive;
+      return ossmInteractive;
+    };
+  }
+  installInteractiveClientProvider();
 })();

@@ -25,6 +25,7 @@
   "type": "module",
   "devDependencies": {
     "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
     "ts-node": "^10.9.2",
     "turbo": "^2.10.10",
     "typescript": "^7.0.2"

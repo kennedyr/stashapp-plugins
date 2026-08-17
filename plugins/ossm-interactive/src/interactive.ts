@@ -1,8 +1,12 @@
-import type { IDeviceSettings, IInteractiveClient } from "./StashTypes";
 import { WebSocketClient } from "./web_socket_client";
 import { VideoPlayerInterface } from "./video_player";
+import { type Maybe, hackService } from './hack_service'
 
 export const PLUGIN_ID = "ossm-interactive";
+
+export interface IPluginSettings {
+  serverUrl: string;
+}
 
 export class OssmInteractive implements IInteractiveClient {
   wsUri = "ws://127.0.0.1:9009";
@@ -13,12 +17,13 @@ export class OssmInteractive implements IInteractiveClient {
   funscriptUrl?: string;
   _scriptOffset: number = 0;
 
-  Toast: ReturnType<typeof window.PluginApi.hooks.useToast> | null;
-  
-  constructor(_handyKey: string, scriptOffset: number, toastRef: ReturnType<typeof window.PluginApi.hooks.useToast> | null) {
+  constructor({
+    scriptOffset,
+  }: {
+    handyKey: string,
+    scriptOffset: number
+  }) {
     this._scriptOffset = scriptOffset;
-
-    this.Toast = toastRef;
 
     PluginApi.Event.addEventListener("stash:location", (e) => {
       const path = e.detail?.data.location.pathname ?? "";
@@ -57,6 +62,10 @@ export class OssmInteractive implements IInteractiveClient {
 
   public async configure(config: Partial<IDeviceSettings>) {
     this._scriptOffset = config.scriptOffset ?? config.offset ?? this._scriptOffset;
+    const pluginConfig = hackService.Settings?.plugins?.[PLUGIN_ID] as Maybe<IPluginSettings> | undefined;
+    if (pluginConfig?.serverUrl) {
+      this.wsUri = pluginConfig.serverUrl;
+    }
   }
 
   public async connect() {
@@ -186,12 +195,18 @@ export class OssmInteractive implements IInteractiveClient {
             }
           } else if ('event' in message) {
             if (message.event == "open") {
-              this.Toast?.success(`OSSM Opened ${props["title"]}`);
+              if (hackService.Toast)
+                hackService.Toast.success(`OSSM Opened ${props["title"]}`);
+              else
+                console.info(`OSSM Opened ${props["title"]}`);
             }
           }
         },
         onConnect: () => {
-          this.Toast?.success('OSSM Connected');
+          if (hackService.Toast)
+            hackService.Toast.success('OSSM Connected');
+          else
+            console.info('OSSM Connected');
         }
       });
     } else {
