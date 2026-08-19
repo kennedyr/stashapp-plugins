@@ -106,7 +106,10 @@ export class VideoPlayerInterface {
   }
 
   public seek(to: number) {
-    this.videoPlayer?.currentTime(to);
+    const old_time = this.currentTime;
+	  if (Math.abs(to - old_time) > 1.5) {
+      this.videoPlayer?.currentTime(to);
+    }
   }
 
   public loop(val: boolean) {
