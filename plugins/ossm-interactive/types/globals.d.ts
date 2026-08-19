@@ -1,6 +1,6 @@
 export declare global {
     interface Window {
         PluginApi: typeof PluginApi;
-        ossmInteractiveHandle: IInteractiveClient;
+        ossmInteractiveHandle: import("stashTypes").IInteractiveClient | undefined;
     }
 }

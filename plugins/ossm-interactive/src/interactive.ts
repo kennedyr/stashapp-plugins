@@ -116,16 +116,13 @@ export class OssmInteractive implements IInteractiveClient {
 
   public async play(position: number) {
     this.debug("[interactive] play", position);
-    if (this.wsClient) {
-      this.wsClient.send({
-        event: "play",
-        properties: {
-          currentTime: position,
-          duration: this.videoPlayer?.duration
-        }
-      });
-      this.devicePlaying = true;
-    }
+    this.wsClient?.send({
+      event: "play",
+      properties: {
+        currentTime: position,
+        duration: this.videoPlayer?.duration
+      }
+    });
   }
 
   seeked(position: number) {
@@ -150,23 +147,17 @@ export class OssmInteractive implements IInteractiveClient {
 
   public async pause() {
     this.debug("[interactive] pause");
-    if (this.wsClient) {
-      this.wsClient.send({
-        event: "pause",
-        properties: {
-          currentTime: this.videoPlayer?.currentTime,
-          duration: this.videoPlayer?.duration
-        }
-      });
-      this.devicePlaying = false;
-    }
+    this.wsClient?.send({
+      event: "pause",
+      properties: {
+        currentTime: this.videoPlayer?.currentTime,
+        duration: this.videoPlayer?.duration
+      }
+    });
   }
 
   public async ensurePlaying(position: number) {
     this.debug("[interactive] ensurePlaying", position);
-    if (this.devicePlaying) {
-      return;
-    }
     await this.play(position);
   }
 
@@ -203,17 +194,21 @@ export class OssmInteractive implements IInteractiveClient {
     }
   }
 
-  handleEvent(message: { event: string; properties: { [key: string]: unknown; } }) {
-    switch (message.event) {
+  handleAck(message: { ack: string; properties: { [key: string]: unknown; } }) {
+    switch (message.ack) {
       case "open":
         this.toastSuccess(`OSSM Opened ${message.properties["title"]}`)
         break;
       case "play":
-        this.videoPlayer?.play(tryParseFloat(message.properties["currentTime"]));
+        this.debug(`OSSM playing ${message.properties["currentTime"]}`)
         this.devicePlaying = true;
         break;
       case "pause":
-        this.videoPlayer?.pause(tryParseFloat(message.properties["currentTime"]));
+        this.debug(`OSSM paused ${message.properties["currentTime"]}`)
+        this.devicePlaying = false;
+        break;
+      case "end":
+        this.debug(`OSSM end`)
         this.devicePlaying = false;
         break;
     }
@@ -239,8 +234,8 @@ export class OssmInteractive implements IInteractiveClient {
           this.debug(JSON.stringify(message, undefined, 2));
           if ('command' in message) {
             this.handleCommand(message);
-          } else if ('event' in message) {
-            this.handleEvent(message);
+          } else if ('ack' in message) {
+            this.handleAck(message);
           }
         },
         onConnect: () => {

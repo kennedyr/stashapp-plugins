@@ -55,6 +55,9 @@ import { hackService } from './hack_service'
       handyKey,
       scriptOffset,
     }) => {
+      if (window.ossmInteractiveHandle) {
+        return window.ossmInteractiveHandle;
+      }
       const ossmInteractive = new OssmInteractive({ handyKey, scriptOffset });
       window.ossmInteractiveHandle = ossmInteractive;
       return ossmInteractive;
