@@ -214,6 +214,17 @@ export class OssmInteractive implements IInteractiveClient {
     }
   }
 
+  getStats() {
+    if (!this.videoPlayer)
+      return {};
+
+    return  {
+					"state": this.videoPlayer.paused ? 'paused' : 'playing',
+					"currentTime": this.videoPlayer.currentTime,
+					"duration": this.videoPlayer.duration
+				}
+  }
+
   ensureConnected() {
     if (!this.videoPlayer) {
       this.videoPlayer = new VideoPlayerInterface({
@@ -240,6 +251,9 @@ export class OssmInteractive implements IInteractiveClient {
         },
         onConnect: () => {
           this.toastSuccess('OSSM Connected');
+        },
+        pollStats: () => {
+          return this.getStats();
         }
       });
     } else {

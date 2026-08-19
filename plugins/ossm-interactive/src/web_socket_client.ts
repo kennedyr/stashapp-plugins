@@ -12,6 +12,7 @@ export type EventHooks = {
   onMessage: (message: any) => void;
   onError: (error: Event) => void;
   onMaxReconnectAttempts: () => void;
+  pollStats: () => { [key: string]: unknown }
 }
 
 export class WebSocketClient {
@@ -31,6 +32,7 @@ export class WebSocketClient {
   onMessage: (message: any) => void;
   onError: (error: Event) => void;
   onMaxReconnectAttempts: () => void;
+  pollStats: () => { [key: string]: unknown }
 
   constructor(url: string, options: Partial<Options & EventHooks> = {}) {
     this.url = url;
@@ -49,12 +51,13 @@ export class WebSocketClient {
     this.isIntentionallyClosed = false;
     this.pendingPings = new Map();
 
-    const noop = function () { };
+    const noop = () => { };
     this.onConnect = options.onConnect ?? noop;
     this.onDisconnect = options.onDisconnect ?? noop;
     this.onMessage = options.onMessage ?? noop;
     this.onError = options.onError ?? noop;
     this.onMaxReconnectAttempts = options.onMaxReconnectAttempts ?? noop;
+    this.pollStats = options.pollStats ?? (() => ({})),
 
     this.connect();
   }
@@ -119,7 +122,8 @@ export class WebSocketClient {
           type: 'pong',
           id: message.id,
           timestamp: message.timestamp,
-          clientTime: Date.now()
+          clientTime: Date.now(),
+          properties: this.pollStats()
         });
         return;
       }
@@ -191,12 +195,13 @@ export class WebSocketClient {
     }
 
     const timestamp = Date.now();
-    const ping = {
+    this.send({
       type: 'ping',
       timestamp,
-      clientTime: timestamp
-    };
-
+      clientTime: timestamp,
+      properties: this.pollStats()
+    });
+    
     // Track pending ping with timeout
     const timeoutId = setTimeout(() => {
       if (this.pendingPings.has(timestamp)) {
@@ -206,7 +211,6 @@ export class WebSocketClient {
     }, this.options.heartbeatTimeout);
 
     this.pendingPings.set(timestamp, { timeoutId });
-    this.send(ping);
   }
 
   public send(data: any) {
