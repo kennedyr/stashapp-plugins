@@ -1,4 +1,5 @@
 export type Options = {
+  debug: boolean;
   heartbeatInterval: number;
   heartbeatTimeout: number;
   reconnectInterval: number;
@@ -34,6 +35,7 @@ export class WebSocketClient {
   constructor(url: string, options: Partial<Options & EventHooks> = {}) {
     this.url = url;
     this.options = {
+      debug: options.debug ?? false,
       heartbeatInterval: options.heartbeatInterval || 30000,
       heartbeatTimeout: options.heartbeatTimeout || 10000,
       reconnectInterval: options.reconnectInterval || 5000,
@@ -229,7 +231,8 @@ export class WebSocketClient {
     this.reconnectAttempts++;
     const delay = this.options.reconnectInterval * Math.min(this.reconnectAttempts, 5);
 
-    console.info(`[websocket] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`);
+    if (this.options.debug)
+      console.info(`[websocket] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`);
 
     setTimeout(() => {
       this.connect();

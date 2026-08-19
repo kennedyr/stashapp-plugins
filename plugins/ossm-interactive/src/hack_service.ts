@@ -1,3 +1,5 @@
+import { type IStashConfig } from "stashTypes";
+
 export type Maybe<T> = T | null;
 class HackService {
   private toastRef: Maybe<ReturnType<typeof PluginApi.hooks.useToast>> = null;

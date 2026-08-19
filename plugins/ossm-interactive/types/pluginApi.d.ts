@@ -793,7 +793,7 @@ declare namespace PluginApi {
   namespace utils {
     namespace InteractiveUtils {
       function getPlayer(): VideoJsPlayer | undefined;
-      var interactiveClientProvider: IInteractiveClientProvider | undefined;
+      var interactiveClientProvider: import("stashTypes").IInteractiveClientProvider | undefined;
     }
     namespace NavUtils {
       function makePerformerScenesUrl(...args: any[]): any;

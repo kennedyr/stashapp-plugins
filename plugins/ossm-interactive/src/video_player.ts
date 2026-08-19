@@ -1,6 +1,7 @@
 import type { VideoJsPlayer } from "video.js";
 
 type Options = {
+  debug: boolean;
   onSeeked: (currentTime: number) => void;
   onPlay: (currentTime: number) => void;
   onPause: (currentTime: number) => void;
@@ -10,7 +11,7 @@ type Options = {
 
 export class VideoPlayerInterface {
   videoPlayer?: VideoJsPlayer;
-
+  debug: boolean;
   onSeeked: (currentTime: number) => void;
   onPlay: (currentTime: number) => void;
   onPause: (currentTime: number) => void;
@@ -19,6 +20,7 @@ export class VideoPlayerInterface {
   reconnectInterval: number;
 
   constructor(options: Partial<Options> = {}) {
+    this.debug = options.debug ?? false; 
     const noop = function () { };
     this.onSeeked = options.onSeeked ?? noop;
     this.onPlay = options.onPlay ?? noop;
@@ -146,7 +148,8 @@ export class VideoPlayerInterface {
       });
       this.videoPlayer?.on('ended', () => this.onEnded())
     }
-    console.warn("[videointerface] video player not found.")
+    if (this.debug)
+      console.warn("[videointerface] video player not found.")
     this._timeoutId = setTimeout(() => this._initializeHooks(retry + 1), this.reconnectInterval);
   }
 

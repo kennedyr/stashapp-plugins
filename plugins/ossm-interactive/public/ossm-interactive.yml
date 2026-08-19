@@ -11,3 +11,7 @@ settings:
     type: STRING
     displayName: Server URL
     description: The address of your OSSM Sauce WS server (e.g. ws://localhost:12345)
+  debug:
+    type: BOOLEAN
+    displayName: Debug
+    description: Enables additional logging

@@ -1,15 +1,20 @@
 import { WebSocketClient } from "./web_socket_client";
 import { VideoPlayerInterface } from "./video_player";
 import { type Maybe, hackService } from './hack_service'
+import { type IDeviceSettings, type IInteractiveClient } from "stashTypes";
 
 export const PLUGIN_ID = "ossm-interactive";
 
 export interface IPluginSettings {
   serverUrl: string;
+  debug: boolean
 }
 
 export class OssmInteractive implements IInteractiveClient {
-  wsUri = "ws://127.0.0.1:9009";
+  options = {
+    serverUrl: "ws://127.0.0.1:9009",
+    debug: false,
+  }
   videoPlayer?: VideoPlayerInterface;
   wsClient?: WebSocketClient;
 
@@ -26,20 +31,24 @@ export class OssmInteractive implements IInteractiveClient {
     this._scriptOffset = scriptOffset;
 
     PluginApi.Event.addEventListener("stash:location", (e) => {
+      this.debug("[interactive] stash:location", e);
       const path = e.detail?.data.location.pathname ?? "";
       const idRegExp = /.*\/scenes\/(\d+)/;
       if (idRegExp.test(path)) {
         // this is a scene page
         this.ensureConnected();
+        this.devicePlaying = false; // pause?
       }
     });
 
     window.addEventListener("pagehide", () => {
+      this.debug("[interactive] pagehide");
       this.wsClient?.close()
       this.videoPlayer?.deinitializeHooks()
     });
 
     window.addEventListener("pageshow", (event) => {
+      this.debug("[interactive] pageshow");
       if (event.persisted) {
         this.wsClient?.connect()
         this.videoPlayer?.initializeHooks()
@@ -61,18 +70,24 @@ export class OssmInteractive implements IInteractiveClient {
   }
 
   public async configure(config: Partial<IDeviceSettings>) {
+    this.debug("[interactive] configure", config);
     this._scriptOffset = config.scriptOffset ?? config.offset ?? this._scriptOffset;
     const pluginConfig = hackService.Settings?.plugins?.[PLUGIN_ID] as Maybe<IPluginSettings> | undefined;
-    if (pluginConfig?.serverUrl) {
-      this.wsUri = pluginConfig.serverUrl;
+    if (pluginConfig) {
+      this.options = {
+        ...this.options,
+        ...pluginConfig
+      }
     }
   }
 
   public async connect() {
+    this.debug("[interactive] connect");
     this.ensureConnected();
   }
 
   public async uploadScript(funscriptUrl: string, apiKey?: string) {
+    this.debug("[interactive] uploadScript", funscriptUrl, apiKey);
     if (!(this.connected && funscriptUrl)) {
       return;
     }
@@ -95,10 +110,12 @@ export class OssmInteractive implements IInteractiveClient {
 
   // Gets the offset, in milliseconds, between the Handy and the HandyFeeling servers.
   public async sync() {
+    this.debug("[interactive] sync");
     return this.wsClient?.estimatedLatency ?? 1;
   }
 
   public async play(position: number) {
+    this.debug("[interactive] play", position);
     if (this.wsClient) {
       this.wsClient.send({
         event: "play",
@@ -132,6 +149,7 @@ export class OssmInteractive implements IInteractiveClient {
   }
 
   public async pause() {
+    this.debug("[interactive] pause");
     if (this.wsClient) {
       this.wsClient.send({
         event: "pause",
@@ -145,6 +163,7 @@ export class OssmInteractive implements IInteractiveClient {
   }
 
   public async ensurePlaying(position: number) {
+    this.debug("[interactive] ensurePlaying", position);
     if (this.devicePlaying) {
       return;
     }
@@ -152,6 +171,7 @@ export class OssmInteractive implements IInteractiveClient {
   }
 
   public async setLooping(looping: boolean) {
+    this.debug("[interactive] setLooping", looping);
     this.wsClient?.send({
       event: "loop",
       properties: {
@@ -162,9 +182,47 @@ export class OssmInteractive implements IInteractiveClient {
     });
   }
 
+  handleCommand(message: { command: string; properties: { [key: string]: unknown; } }) {
+    switch (message.command) {
+      case "play":
+        this.videoPlayer?.play(tryParseFloat(message.properties["currentTime"]));
+        this.devicePlaying = true;
+        break;
+      case "pause":
+        this.videoPlayer?.pause(tryParseFloat(message.properties["currentTime"]));
+        this.devicePlaying = false;
+        break;
+      case "seek":
+        const currentTime = tryParseFloat(message.properties["currentTime"]);
+        if (currentTime)
+          this.videoPlayer?.seek(currentTime);
+        break;
+      case "loop":
+        this.videoPlayer?.loop(Boolean(message.properties["looping"]))
+        break;
+    }
+  }
+
+  handleEvent(message: { event: string; properties: { [key: string]: unknown; } }) {
+    switch (message.event) {
+      case "open":
+        this.toastSuccess(`OSSM Opened ${message.properties["title"]}`)
+        break;
+      case "play":
+        this.videoPlayer?.play(tryParseFloat(message.properties["currentTime"]));
+        this.devicePlaying = true;
+        break;
+      case "pause":
+        this.videoPlayer?.pause(tryParseFloat(message.properties["currentTime"]));
+        this.devicePlaying = false;
+        break;
+    }
+  }
+
   ensureConnected() {
     if (!this.videoPlayer) {
       this.videoPlayer = new VideoPlayerInterface({
+        debug: this.options.debug,
         // onPlay: this.play,
         // onPause: this.pause,
         onSeeked: (currentTime) => this.seeked(currentTime),
@@ -175,43 +233,42 @@ export class OssmInteractive implements IInteractiveClient {
     }
 
     if (!this.wsClient) {
-      this.wsClient = new WebSocketClient(this.wsUri, {
+      this.wsClient = new WebSocketClient(this.options.serverUrl, {
+        debug: this.options.debug,
         onMessage: (message) => {
-          var props = 'properties' in message ? message["properties"] : {};
+          this.debug(JSON.stringify(message, undefined, 2));
           if ('command' in message) {
-            switch (message.command) {
-              case "play":
-                this.videoPlayer?.play(props["currentTime"]);
-                break;
-              case "pause":
-                this.videoPlayer?.pause(props["currentTime"]);
-                break;
-              case "seek":
-                this.videoPlayer?.seek(props["currentTime"]);
-                break;
-              case "loop":
-                this.videoPlayer?.loop(Boolean(props["looping"]))
-                break;
-            }
+            this.handleCommand(message);
           } else if ('event' in message) {
-            if (message.event == "open") {
-              if (hackService.Toast)
-                hackService.Toast.success(`OSSM Opened ${props["title"]}`);
-              else
-                console.info(`OSSM Opened ${props["title"]}`);
-            }
+            this.handleEvent(message);
           }
         },
         onConnect: () => {
-          if (hackService.Toast)
-            hackService.Toast.success('OSSM Connected');
-          else
-            console.info('OSSM Connected');
+          this.toastSuccess('OSSM Connected');
         }
       });
     } else {
       this.wsClient.attemptReconnect(true);
     }
   }
+
+  toastSuccess(message: string) {
+    if (hackService.Toast)
+      hackService.Toast.success(message);
+    else
+      console.info(message);
+  }
+
+  debug(...data: any[]) {
+    if (this.options.debug)
+      console.debug(data);
+  }
 }
 
+function tryParseFloat(num: unknown) {
+  const val = parseFloat(num as string);
+  if (isNaN(val))
+    return undefined;
+
+  return val;
+}
