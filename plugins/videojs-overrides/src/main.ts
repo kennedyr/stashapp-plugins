@@ -17,5 +17,5 @@ import { registerVideoInitializedEvent } from "@stashapp-plugins/shared";
     }
   }
 
-  window.PluginApi.Event.addEventListener("stash:video-js-player", (e: any) => overrideVjsPlayerOptions(e));
+  window.PluginApi.Event.addEventListener("stash:video-js-player", (e) => overrideVjsPlayerOptions( e.detail?.data ));
 })();
