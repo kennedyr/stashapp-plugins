@@ -1,4 +1,4 @@
-import { type IStashConfig } from "stashTypes";
+import { IStashConfig } from "StashTypes";
 
 export type Maybe<T> = T | null;
 class HackService {

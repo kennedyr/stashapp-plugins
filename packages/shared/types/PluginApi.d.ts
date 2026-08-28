@@ -793,7 +793,7 @@ declare namespace PluginApi {
   namespace utils {
     namespace InteractiveUtils {
       function getPlayer(): VideoJsPlayer | undefined;
-      var interactiveClientProvider: import("stashTypes").IInteractiveClientProvider | undefined;
+      var interactiveClientProvider: import("StashTypes").IInteractiveClientProvider | undefined;
     }
     namespace NavUtils {
       function makePerformerScenesUrl(...args: any[]): any;
@@ -1136,8 +1136,9 @@ declare namespace PluginApi {
       } | {
           handleEvent(object: StashEvent): void;
       }
-    function addEventListener(type: 'stash:location', callback: StashEventListener | null, options?: AddEventListenerOptions | boolean): void;
-    function removeEventListener(type: 'stash:location', callback: StashEventListener | null, options?: EventListenerOptions | boolean): void;
+    function dispatch(type: string, id?: string, data?: any): void;
+    function addEventListener(type: 'stash:location' | 'stash:video-js-player', callback: StashEventListener | null, options?: AddEventListenerOptions | boolean): void;
+    function removeEventListener(type: 'stash:location' | 'stash:video-js-player', callback: StashEventListener | null, options?: EventListenerOptions | boolean): void;
   }
 }
 

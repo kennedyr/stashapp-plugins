@@ -1,4 +1,4 @@
-declare module "stashTypes" {
+declare module "StashTypes" {
     export interface IDeviceSettings {
         connectionKey: string;
         scriptOffset: number;

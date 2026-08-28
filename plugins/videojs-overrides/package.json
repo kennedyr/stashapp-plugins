@@ -1,6 +1,7 @@
 {
   "name": "@stashapp-plugins/videojs-overrides",
   "private": true,
+  "type": "module",
   "version": "1.0.0",
   "exports": {
     ".": {
@@ -11,13 +12,17 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "build": "tsup",
+    "build": "tsdown",
     "check-types": "tsc --noEmit"
   },
+  "dependencies": {
+    "@stashapp-plugins/shared": "workspace:*"
+  },
   "devDependencies": {
-    "@tsconfig/recommended": "^1.0.13",
-    "@types/node": "^20.19.43",
-    "@types/video.js": "^7.3.58",
-    "tsup": "^8.5.1"
+    "@tsconfig/recommended": "catalog:",
+    "@types/node": "catalog:",
+    "@types/video.js": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:"
   }
 }

@@ -1,7 +1,10 @@
 import type { VideoJsPlayer } from "video.js";
+import { registerVideoInitializedEvent } from "@stashapp-plugins/shared";
+
 (function () {
-  function setupVideoScrollWheel() {
-    const vjsPlayerElement = document.getElementById("VideoJsPlayer");
+  registerVideoInitializedEvent();
+
+  function overrideVjsPlayerOptions(vjsPlayerElement: any) {
     if (!vjsPlayerElement || !('player' in vjsPlayerElement)) return;
 
     const vjsPlayer = vjsPlayerElement.player as VideoJsPlayer;
@@ -13,11 +16,7 @@ import type { VideoJsPlayer } from "video.js";
       });
     }
   }
-
-  // Wait for video player to load on scene page.
-  window.csLib.PathElementListener(
-    "/scenes/",
-    "#VideoJsPlayer",
-    setupVideoScrollWheel
-  ); // PathElementListener is from cs-ui-lib.js
+  window.PluginApi.Event.addEventListener("stash:video-js-player", (e: any) => {
+    overrideVjsPlayerOptions(e)
+  });
 })();

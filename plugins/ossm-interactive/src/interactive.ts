@@ -1,7 +1,7 @@
 import { WebSocketClient } from "./web_socket_client";
 import { VideoPlayerInterface } from "./video_player";
 import { type Maybe, hackService } from './hack_service'
-import { type IDeviceSettings, type IInteractiveClient } from "stashTypes";
+import { IDeviceSettings, IInteractiveClient } from "StashTypes";
 
 export const PLUGIN_ID = "ossm-interactive";
 
