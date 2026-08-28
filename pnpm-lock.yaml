@@ -241,6 +241,21 @@ importers:
         specifier: ^8.5.1
         version: 8.5.1(postcss@8.5.20)(typescript@7.0.2)(yaml@2.9.0)
 
+  plugins/videojs-overrides:
+    devDependencies:
+      '@tsconfig/recommended':
+        specifier: ^1.0.13
+        version: 1.0.13
+      '@types/node':
+        specifier: ^20.19.43
+        version: 20.19.43
+      '@types/video.js':
+        specifier: ^7.3.58
+        version: 7.3.58
+      tsup:
+        specifier: ^8.5.1
+        version: 8.5.1(postcss@8.5.20)(typescript@7.0.2)(yaml@2.9.0)
+
 packages:
 
   '@cspotcode/source-map-support@0.8.1':
