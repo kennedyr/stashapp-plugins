@@ -2,7 +2,7 @@
   "name": "@stashapp-plugins/ossm-interactive",
   "private": true,
   "type": "module",
-  "version": "1.2.7",
+  "version": "1.2.8",
   "exports": {
     ".": {
       "source": "./src/main.ts",
