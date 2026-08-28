@@ -4,5 +4,8 @@ export default defineConfig({
   format: ["esm", "cjs"],
   entry: ["src/main.ts"],
   dts: false,
-  copy: { from: 'public/*', flatten: true }
+  copy: { from: 'public/*', flatten: true },
+  deps: {
+    alwaysBundle: ['@stashapp-plugins/shared']
+  }
 });
