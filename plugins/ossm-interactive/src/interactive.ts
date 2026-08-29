@@ -2,6 +2,7 @@ import { WebSocketClient } from "./web_socket_client";
 import { VideoPlayerInterface } from "./video_player";
 import { type Maybe, hackService } from './hack_service'
 import { IDeviceSettings, IInteractiveClient } from "StashTypes";
+import { pathListener } from "@stashapp-plugins/shared";
 
 export const PLUGIN_ID = "ossm-interactive";
 
@@ -15,8 +16,8 @@ export class OssmInteractive implements IInteractiveClient {
     serverUrl: "ws://127.0.0.1:9009",
     debug: false,
   }
-  videoPlayer?: VideoPlayerInterface;
-  wsClient?: WebSocketClient;
+  videoPlayer: VideoPlayerInterface;
+  wsClient: WebSocketClient;
 
   devicePlaying: boolean = false;
   funscriptUrl?: string;
@@ -30,28 +31,56 @@ export class OssmInteractive implements IInteractiveClient {
   }) {
     this._scriptOffset = scriptOffset;
 
-    PluginApi.Event.addEventListener("stash:location", (e) => {
-      this.debug("[interactive] stash:location", e);
-      const path = e.detail?.data.location.pathname ?? "";
-      const idRegExp = /.*\/scenes\/(\d+)/;
-      if (idRegExp.test(path)) {
-        // this is a scene page
-        this.ensureConnected();
-        this.devicePlaying = false; // pause?
+    const pluginConfig = hackService.Settings?.plugins?.[PLUGIN_ID] as Maybe<IPluginSettings> | undefined;
+    if (pluginConfig) {
+      this.options = {
+        ...this.options,
+        ...pluginConfig
+      };
+    }
+
+    this.videoPlayer = new VideoPlayerInterface({
+      debug: this.options.debug,
+      // onPlay: this.play,
+      // onPause: this.pause,
+      onSeeked: (currentTime) => this.seeked(currentTime),
+      onEnded: () => this.ended()
+    });
+
+    this.wsClient = new WebSocketClient(this.options.serverUrl, {
+      debug: this.options.debug,
+      onMessage: (message) => {
+        this.debug(JSON.stringify(message, undefined, 2));
+        if ('command' in message) {
+          this.handleCommand(message);
+        } else if ('ack' in message) {
+          this.handleAck(message);
+        }
+      },
+      onConnect: () => {
+        this.toastSuccess('OSSM Connected');
+      },
+      pollStats: () => {
+        return this.getStats();
       }
+    });
+
+    pathListener(/.*\/scenes\/(\d+)/, () => {
+      this.ensureConnected();
+      this.devicePlaying = false; // pause?
     });
 
     window.addEventListener("pagehide", () => {
       this.debug("[interactive] pagehide");
-      this.wsClient?.close()
-      this.videoPlayer?.deinitializeHooks()
+      this.wsClient.close()
+      this.videoPlayer.deinitializeHooks()
     });
 
     window.addEventListener("pageshow", (event) => {
       this.debug("[interactive] pageshow");
       if (event.persisted) {
-        this.wsClient?.connect()
-        this.videoPlayer?.initializeHooks()
+        this.wsClient.connect()
+        this.videoPlayer.initializeHooks()
       }
     });
   }
@@ -62,7 +91,7 @@ export class OssmInteractive implements IInteractiveClient {
   }
 
   public get connected() {
-    return this.wsClient?.connected ?? false;
+    return this.wsClient.connected ?? false;
   }
 
   public get playing() {
@@ -72,13 +101,6 @@ export class OssmInteractive implements IInteractiveClient {
   public async configure(config: Partial<IDeviceSettings>) {
     this.debug("[interactive] configure", config);
     this._scriptOffset = config.scriptOffset ?? config.offset ?? this._scriptOffset;
-    const pluginConfig = hackService.Settings?.plugins?.[PLUGIN_ID] as Maybe<IPluginSettings> | undefined;
-    if (pluginConfig) {
-      this.options = {
-        ...this.options,
-        ...pluginConfig
-      }
-    }
   }
 
   public async connect() {
@@ -98,12 +120,12 @@ export class OssmInteractive implements IInteractiveClient {
       funscriptUrl = url.toString();
     }
 
-    this.wsClient?.send({
+    this.wsClient.send({
       event: "open",
       properties: {
         funscriptUrl: funscriptUrl,
-        currentTime: this.videoPlayer?.currentTime,
-        duration: this.videoPlayer?.duration
+        currentTime: this.videoPlayer.currentTime,
+        duration: this.videoPlayer.duration
       }
     });
   }
@@ -111,47 +133,47 @@ export class OssmInteractive implements IInteractiveClient {
   // Gets the offset, in milliseconds, between the Handy and the HandyFeeling servers.
   public async sync() {
     this.debug("[interactive] sync");
-    return this.wsClient?.estimatedLatency ?? 1;
+    return this.wsClient.estimatedLatency ?? 1;
   }
 
   public async play(position: number) {
     this.debug("[interactive] play", position);
-    this.wsClient?.send({
+    this.wsClient.send({
       event: "play",
       properties: {
         currentTime: position,
-        duration: this.videoPlayer?.duration
+        duration: this.videoPlayer.duration
       }
     });
   }
 
   seeked(position: number) {
-    this.wsClient?.send({
+    this.wsClient.send({
       event: "seek",
       properties: {
         currentTime: position,
-        duration: this.videoPlayer?.duration
+        duration: this.videoPlayer.duration
       }
     });
   }
 
   ended() {
-    this.wsClient?.send({
+    this.wsClient.send({
       event: "end",
       properties: {
-        currentTime: this.videoPlayer?.currentTime,
-        duration: this.videoPlayer?.duration
+        currentTime: this.videoPlayer.currentTime,
+        duration: this.videoPlayer.duration
       }
     });
   }
 
   public async pause() {
     this.debug("[interactive] pause");
-    this.wsClient?.send({
+    this.wsClient.send({
       event: "pause",
       properties: {
-        currentTime: this.videoPlayer?.currentTime,
-        duration: this.videoPlayer?.duration
+        currentTime: this.videoPlayer.currentTime,
+        duration: this.videoPlayer.duration
       }
     });
   }
@@ -163,12 +185,12 @@ export class OssmInteractive implements IInteractiveClient {
 
   public async setLooping(looping: boolean) {
     this.debug("[interactive] setLooping", looping);
-    this.wsClient?.send({
+    this.wsClient.send({
       event: "loop",
       properties: {
         looping: looping,
-        currentTime: this.videoPlayer?.currentTime,
-        duration: this.videoPlayer?.duration
+        currentTime: this.videoPlayer.currentTime,
+        duration: this.videoPlayer.duration
       }
     });
   }
@@ -176,20 +198,20 @@ export class OssmInteractive implements IInteractiveClient {
   handleCommand(message: { command: string; properties: { [key: string]: unknown; } }) {
     switch (message.command) {
       case "play":
-        this.videoPlayer?.play(tryParseFloat(message.properties["currentTime"]));
+        this.videoPlayer.play(tryParseFloat(message.properties["currentTime"]));
         this.devicePlaying = true;
         break;
       case "pause":
-        this.videoPlayer?.pause(tryParseFloat(message.properties["currentTime"]));
+        this.videoPlayer.pause(tryParseFloat(message.properties["currentTime"]));
         this.devicePlaying = false;
         break;
       case "seek":
         const currentTime = tryParseFloat(message.properties["currentTime"]);
         if (currentTime)
-          this.videoPlayer?.seek(currentTime);
+          this.videoPlayer.seek(currentTime);
         break;
       case "loop":
-        this.videoPlayer?.loop(Boolean(message.properties["looping"]))
+        this.videoPlayer.loop(Boolean(message.properties["looping"]))
         break;
     }
   }
@@ -218,47 +240,17 @@ export class OssmInteractive implements IInteractiveClient {
     if (!this.videoPlayer)
       return {};
 
-    return  {
-					"state": this.videoPlayer.paused ? 'paused' : 'playing',
-					"currentTime": this.videoPlayer.currentTime,
-					"duration": this.videoPlayer.duration
-				}
+    return {
+      "state": this.videoPlayer.paused ? 'paused' : 'playing',
+      "currentTime": this.videoPlayer.currentTime,
+      "duration": this.videoPlayer.duration
+    }
   }
 
   ensureConnected() {
-    if (!this.videoPlayer) {
-      this.videoPlayer = new VideoPlayerInterface({
-        debug: this.options.debug,
-        // onPlay: this.play,
-        // onPause: this.pause,
-        onSeeked: (currentTime) => this.seeked(currentTime),
-        onEnded: () => this.ended(),
-      });
-    } else {
-      this.videoPlayer.initializeHooks();
-    }
+    this.videoPlayer.initializeHooks();
 
-    if (!this.wsClient) {
-      this.wsClient = new WebSocketClient(this.options.serverUrl, {
-        debug: this.options.debug,
-        onMessage: (message) => {
-          this.debug(JSON.stringify(message, undefined, 2));
-          if ('command' in message) {
-            this.handleCommand(message);
-          } else if ('ack' in message) {
-            this.handleAck(message);
-          }
-        },
-        onConnect: () => {
-          this.toastSuccess('OSSM Connected');
-        },
-        pollStats: () => {
-          return this.getStats();
-        }
-      });
-    } else {
-      this.wsClient.attemptReconnect(true);
-    }
+    this.wsClient.attemptReconnect(true);
   }
 
   toastSuccess(message: string) {
