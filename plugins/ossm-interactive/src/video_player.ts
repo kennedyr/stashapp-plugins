@@ -11,6 +11,7 @@ type Options = {
 
 export class VideoPlayerInterface {
   videoPlayer?: VideoJsPlayer;
+  hooksInstalled = false;
   debug: boolean;
   onSeeked: (currentTime: number) => void;
   onPlay: (currentTime: number) => void;
@@ -20,16 +21,21 @@ export class VideoPlayerInterface {
   reconnectInterval: number;
 
   constructor(options: Partial<Options> = {}) {
-    this.debug = options.debug ?? false; 
-    const noop = function () { };
-    this.onSeeked = options.onSeeked ?? noop;
-    this.onPlay = options.onPlay ?? noop;
-    this.onPause = options.onPause ?? noop;
-    this.onEnded = options.onEnded ?? noop;
+    this.debug = options.debug ?? false;
+    this.onSeeked = options.onSeeked ?? (() => { });
+    this.onPlay = options.onPlay ?? (() => { });
+    this.onPause = options.onPause ?? (() => { });
+    this.onEnded = options.onEnded ?? (() => { });
 
     this.reconnectInterval = options.reconnectInterval || 3000;
 
     this.initializeHooks();
+
+    window.PluginApi.Event.addEventListener("stash:video-js-player", (e) => {
+      const player = e.detail?.data?.player;
+      if (player)
+        this.initializeHooks(player);
+    });
   }
 
   public get connected() {
@@ -84,13 +90,6 @@ export class VideoPlayerInterface {
     }
   }
 
-  public initializeHooks() {
-    if (this.videoPlayer) {
-      this.deinitializeHooks();
-    }
-    this._timeoutId = setTimeout(() => this._initializeHooks(), this.reconnectInterval);
-  }
-
   public play(currentTime?: number) {
     if (currentTime) {
       this.videoPlayer?.currentTime(currentTime);
@@ -107,7 +106,7 @@ export class VideoPlayerInterface {
 
   public seek(to: number) {
     const old_time = this.currentTime;
-	  if (Math.abs(to - old_time) > 1.5) {
+    if (Math.abs(to - old_time) > 1.5) {
       this.videoPlayer?.currentTime(to);
     }
   }
@@ -116,55 +115,48 @@ export class VideoPlayerInterface {
     this.videoPlayer?.loop(val)
   }
 
-  _timeoutId?: number;
-  _initializeHooks(retry: number = 0) {
-    if (this.videoPlayer) {
-      if (this._timeoutId) {
-        clearTimeout(this._timeoutId);
-      }
-      return;
+  initializeHooks(videoPlayer: VideoJsPlayer | undefined = undefined) {
+    if (videoPlayer) {
+      this.deinitializeHooks();
+      this.videoPlayer = videoPlayer;
     }
 
-    if (retry >= 3) {
-      console.warn("[videointerface] video player initialize timed out.")
-      return
+    if (!this.videoPlayer) {
+      this.videoPlayer = window.PluginApi.utils.InteractiveUtils.getPlayer();
     }
 
-    this.videoPlayer = window.PluginApi.utils.InteractiveUtils.getPlayer();
-    if (this.videoPlayer) {
-      this.videoPlayer?.on('play', () => {
+    if (this.videoPlayer && !this.hooksInstalled) {
+      this.hooksInstalled = true;
+      this.videoPlayer.on('play', () => {
         this.onPlay(this.currentTime);
       });
       // resumed after buffering
-      this.videoPlayer?.on('playing', () => {
+      this.videoPlayer.on('playing', () => {
         this.onPlay(this.currentTime);
       });
-      this.videoPlayer?.on('pause', () => {
+      this.videoPlayer.on('pause', () => {
         this.onPause(this.currentTime);
       });
       //  buffering
-      this.videoPlayer?.on('waiting', () => {
+      this.videoPlayer.on('waiting', () => {
         this.onPause(this.currentTime);
       });
-      this.videoPlayer?.on('seeked', () => {
+      this.videoPlayer.on('seeked', () => {
         this.onSeeked(this.currentTime);
       });
-      this.videoPlayer?.on('ended', () => this.onEnded())
+      this.videoPlayer.on('ended', () => this.onEnded())
     }
-    if (this.debug)
-      console.warn("[videointerface] video player not found.")
-    this._timeoutId = setTimeout(() => this._initializeHooks(retry + 1), this.reconnectInterval);
   }
 
   deinitializeHooks() {
-    if (this.videoPlayer) {
+    if (this.videoPlayer && this.hooksInstalled) {
+      this.hooksInstalled = false;
       this.videoPlayer.off('play');
       this.videoPlayer.off('playing');
       this.videoPlayer.off('pause');
       this.videoPlayer.off('waiting');
       this.videoPlayer.off('seeked');
       this.videoPlayer.off('ended');
-      this.videoPlayer = undefined;
     }
   }
 }

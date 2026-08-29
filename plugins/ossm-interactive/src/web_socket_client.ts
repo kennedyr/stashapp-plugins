@@ -51,15 +51,14 @@ export class WebSocketClient {
     this.isIntentionallyClosed = false;
     this.pendingPings = new Map();
 
-    const noop = () => { };
-    this.onConnect = options.onConnect ?? noop;
-    this.onDisconnect = options.onDisconnect ?? noop;
-    this.onMessage = options.onMessage ?? noop;
-    this.onError = options.onError ?? noop;
-    this.onMaxReconnectAttempts = options.onMaxReconnectAttempts ?? noop;
+    this.onConnect = options.onConnect ?? (() => { });
+    this.onDisconnect = options.onDisconnect ?? (() => { });
+    this.onMessage = options.onMessage ?? (() => { });
+    this.onError = options.onError ?? (() => { });
+    this.onMaxReconnectAttempts = options.onMaxReconnectAttempts ?? (() => { });
     this.pollStats = options.pollStats ?? (() => ({})),
 
-    this.connect();
+      this.connect();
   }
 
   public get connected() {
@@ -201,7 +200,7 @@ export class WebSocketClient {
       clientTime: timestamp,
       properties: this.pollStats()
     });
-    
+
     // Track pending ping with timeout
     const timeoutId = setTimeout(() => {
       if (this.pendingPings.has(timestamp)) {
