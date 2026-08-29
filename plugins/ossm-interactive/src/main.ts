@@ -1,8 +1,10 @@
 import { OssmInteractive } from './interactive'
 import { hackService } from './hack_service'
+import { registerVideoInitializedEvent } from "@stashapp-plugins/shared";
 
 (function () {
   const { React, hooks, patch, utils, GQL } = window.PluginApi;
+  registerVideoInitializedEvent();
 
   let hooksInstalled = false;
   let ossmProviderInstalled = false;
