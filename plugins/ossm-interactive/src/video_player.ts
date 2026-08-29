@@ -36,6 +36,12 @@ export class VideoPlayerInterface {
       if (player)
         this.initializeHooks(player);
     });
+
+    window.document.body.onkeyup = (e) => {
+      if (e.key == " " || e.code == "Space") {
+        this.togglePaused()
+      }
+    }
   }
 
   public get connected() {
@@ -60,7 +66,7 @@ export class VideoPlayerInterface {
 
   public get ended() {
     try {
-      return this.videoPlayer?.paused() ?? false;
+      return this.videoPlayer?.ended() ?? false;
     } catch {
       return false;
     }
@@ -102,6 +108,14 @@ export class VideoPlayerInterface {
       this.videoPlayer?.currentTime(currentTime);
     }
     this.videoPlayer?.pause();
+  }
+
+  public togglePaused() {
+    if (this.paused) {
+      this.play();
+    } else {
+      this.pause();
+    }
   }
 
   public seek(to: number) {
