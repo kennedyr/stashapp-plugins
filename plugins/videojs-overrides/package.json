@@ -2,7 +2,7 @@
   "name": "@stashapp-plugins/videojs-overrides",
   "private": true,
   "type": "module",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "exports": {
     ".": {
       "source": "./src/main.ts",
