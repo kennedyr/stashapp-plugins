@@ -1,4 +1,4 @@
-let videoInitializedEventInstalled = false;
+export type Maybe<T> = T | null | undefined;
 
 export const pathListener = (pathRegExp: RegExp, callback: (path: string) => void) => {
   const test_path = (path: string) => {
@@ -28,10 +28,10 @@ export const pathElementListener = (path: RegExp, selectors: string, callback: (
 };
 
 export const registerVideoInitializedEvent = () => {
-  if (videoInitializedEventInstalled)
+  if (window.videoInitializedEventInstalled)
     return;
 
   pathElementListener(/.*\/scenes\/(\d+)/, "#VideoJsPlayer", (element) =>
     window.PluginApi.Event.dispatch("video-js-player", undefined, element));
-  videoInitializedEventInstalled = true;
+  window.videoInitializedEventInstalled = true;
 }

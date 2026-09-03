@@ -1,6 +1,6 @@
+import { Maybe } from "@stashapp-plugins/shared";
 import { IStashConfig } from "StashTypes";
 
-export type Maybe<T> = T | null;
 class HackService {
   private toastRef: Maybe<ReturnType<typeof PluginApi.hooks.useToast>> = null;
   private settingsRef: Maybe<IStashConfig> = null;

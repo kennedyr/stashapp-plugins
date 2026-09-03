@@ -1,8 +1,8 @@
 import { WebSocketClient } from "./web_socket_client";
 import { VideoPlayerInterface } from "./video_player";
-import { type Maybe, hackService } from './hack_service'
+import { hackService } from './hack_service'
 import { IDeviceSettings, IInteractiveClient } from "StashTypes";
-import { pathListener } from "@stashapp-plugins/shared";
+import { Maybe, pathListener } from "@stashapp-plugins/shared";
 
 export const PLUGIN_ID = "ossm-interactive";
 

@@ -1,6 +1,7 @@
 export declare global {
     interface Window {
         PluginApi: typeof PluginApi;
-        ossmInteractiveHandle: import("StashTypes").IInteractiveClient | undefined;
+        ossmInteractiveHandle: Maybe<import("StashTypes").IInteractiveClient>;
+        videoInitializedEventInstalled: Maybe<boolean>;
     }
 }
