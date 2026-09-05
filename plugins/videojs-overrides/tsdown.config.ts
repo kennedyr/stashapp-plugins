@@ -5,7 +5,7 @@ export default defineConfig({
   entry: ["src/main.ts"],
   dts: false,
   platform: 'browser',
-  sourcemap: true,
+  sourcemap: false,
   copy: { from: 'public/*', flatten: true },
   deps: {
     alwaysBundle: ['@stashapp-plugins/shared']

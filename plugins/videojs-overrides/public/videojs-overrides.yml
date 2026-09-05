@@ -6,4 +6,3 @@ url: https://github.com/kennedyr/stashapp-plugins
 ui:
   javascript:
     - main.iife.js
-    - main.iife.js.map
