@@ -38,7 +38,9 @@ export class VideoPlayerInterface {
     });
 
     window.document.body.onkeyup = (e) => {
-      if (e.key == " " || e.code == "Space") {
+      const target = e.target as Element;
+      const alreadyHandled = [...(target?.classList?.values() ?? [])].some(c => c.startsWith('vjs'));
+      if (!alreadyHandled && (e.key == " " || e.code == "Space")) {
         this.togglePaused()
       }
     }

@@ -14,7 +14,7 @@ export interface IPluginSettings {
 export class OssmInteractive implements IInteractiveClient {
   options = {
     serverUrl: "ws://127.0.0.1:9009",
-    debug: false,
+    debug: true,
   }
   videoPlayer: VideoPlayerInterface;
   wsClient: WebSocketClient;
@@ -22,14 +22,17 @@ export class OssmInteractive implements IInteractiveClient {
   devicePlaying: boolean = false;
   funscriptUrl?: string;
   _scriptOffset: number = 0;
+  _handyKey: string = "";
 
   constructor({
+    handyKey,
     scriptOffset,
   }: {
     handyKey: string,
     scriptOffset: number
   }) {
     this._scriptOffset = scriptOffset;
+    this._handyKey = handyKey;
 
     const pluginConfig = hackService.Settings?.plugins?.[PLUGIN_ID] as Maybe<IPluginSettings> | undefined;
     if (pluginConfig) {
@@ -87,7 +90,7 @@ export class OssmInteractive implements IInteractiveClient {
 
   // This is expected to exist by Stash
   public get handyKey() {
-    return String(Date.now());
+    return this._handyKey;
   }
 
   public get connected() {
@@ -110,20 +113,18 @@ export class OssmInteractive implements IInteractiveClient {
 
   public async uploadScript(funscriptUrl: string, apiKey?: string) {
     this.debug("[interactive] uploadScript", funscriptUrl, apiKey);
-    if (!(this.connected && funscriptUrl)) {
-      return;
-    }
 
+    this.funscriptUrl = funscriptUrl;
     if (typeof apiKey !== "undefined" && apiKey !== "") {
       const url = new URL(funscriptUrl);
       url.searchParams.append("apikey", apiKey);
-      funscriptUrl = url.toString();
+      this.funscriptUrl = url.toString();
     }
 
     this.wsClient.send({
       event: "open",
       properties: {
-        funscriptUrl: funscriptUrl,
+        funscriptUrl: this.funscriptUrl,
         currentTime: this.videoPlayer.currentTime,
         duration: this.videoPlayer.duration
       }
