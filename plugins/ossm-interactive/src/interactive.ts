@@ -25,14 +25,12 @@ export class OssmInteractive implements IInteractiveClient {
   _handyKey: string = "";
 
   constructor({
-    handyKey,
     scriptOffset,
   }: {
     handyKey: string,
     scriptOffset: number
   }) {
     this._scriptOffset = scriptOffset;
-    this._handyKey = handyKey;
 
     const pluginConfig = hackService.Settings?.plugins?.[PLUGIN_ID] as Maybe<IPluginSettings> | undefined;
     if (pluginConfig) {
@@ -104,6 +102,7 @@ export class OssmInteractive implements IInteractiveClient {
   public async configure(config: Partial<IDeviceSettings>) {
     this.debug("[interactive] configure", config);
     this._scriptOffset = config.scriptOffset ?? config.offset ?? this._scriptOffset;
+    this._handyKey = config.connectionKey ?? "default";
   }
 
   public async connect() {
