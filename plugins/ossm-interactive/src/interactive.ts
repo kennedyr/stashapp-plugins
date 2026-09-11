@@ -133,7 +133,7 @@ export class OssmInteractive implements IInteractiveClient {
   // Gets the offset, in milliseconds, between the Handy and the HandyFeeling servers.
   public async sync() {
     this.debug("[interactive] sync");
-    return this.wsClient.estimatedLatency ?? 1;
+    return this.wsClient.estimatedLatency || 1;
   }
 
   public async play(position: number) {
@@ -262,7 +262,7 @@ export class OssmInteractive implements IInteractiveClient {
 
   debug(...data: any[]) {
     if (this.options.debug)
-      console.debug(data);
+      console.debug(...data);
   }
 }
 
