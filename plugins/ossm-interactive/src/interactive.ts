@@ -5,6 +5,7 @@ import { IDeviceSettings, IInteractiveClient } from "StashTypes";
 import { Maybe, pathListener, testCurrentPath } from "@stashapp-plugins/shared";
 
 export const PLUGIN_ID = "ossm-interactive";
+const SCENE_PATH_REGEX = /.*\/scenes\/(\d+)/;
 
 export interface IPluginSettings {
   serverUrl: string;
@@ -67,15 +68,14 @@ export class OssmInteractive implements IInteractiveClient {
       }
     });
 
-    const scenePathRegex = /.*\/scenes\/(\d+)/;
-    pathListener(scenePathRegex, () => {
+    pathListener(SCENE_PATH_REGEX, () => {
       this.ensureConnected();
       this.devicePlaying = false; // pause?
     });
 
     window.addEventListener("pagehide", () => {
       this.debug("[interactive] pagehide");
-      testCurrentPath(scenePathRegex, () => {
+      testCurrentPath(SCENE_PATH_REGEX, () => {
         this.wsClient.close();
         this.videoPlayer.deinitializeHooks();
       });
@@ -84,7 +84,7 @@ export class OssmInteractive implements IInteractiveClient {
     window.addEventListener("pageshow", (event) => {
       this.debug("[interactive] pageshow");
       if (event.persisted) {
-        testCurrentPath(scenePathRegex, () => {
+        testCurrentPath(SCENE_PATH_REGEX, () => {
           this.wsClient.connect();
           this.videoPlayer.initializeHooks();
         });
@@ -113,7 +113,11 @@ export class OssmInteractive implements IInteractiveClient {
 
   public async connect() {
     this.debug("[interactive] connect");
-    this.ensureConnected();
+
+    testCurrentPath(SCENE_PATH_REGEX, () => {
+      this.debug("[interactive] connecting...");
+      this.ensureConnected();
+    });
   }
 
   public async uploadScript(funscriptUrl: string, apiKey?: string) {

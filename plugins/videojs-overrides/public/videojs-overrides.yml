@@ -1,7 +1,7 @@
 name: videojs-overrides
 # requires: CommunityScriptsUILibrary
 description: Disable click to play on video.js scene player
-version: 1.0.6
+version: 1.3.6
 url: https://github.com/kennedyr/stashapp-plugins
 ui:
   javascript:
