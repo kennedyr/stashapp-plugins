@@ -21,6 +21,7 @@ export class OssmInteractive implements IInteractiveClient {
 
   devicePlaying: boolean = false;
   funscriptUrl?: string;
+  ackFunscriptUrl: boolean = false;
   _scriptOffset: number = 0;
   _handyKey: string = "";
 
@@ -113,11 +114,16 @@ export class OssmInteractive implements IInteractiveClient {
   public async uploadScript(funscriptUrl: string, apiKey?: string) {
     this.debug("[interactive] uploadScript", funscriptUrl, apiKey);
 
-    this.funscriptUrl = funscriptUrl;
+    let authenticatedUrl = funscriptUrl;
     if (typeof apiKey !== "undefined" && apiKey !== "") {
       const url = new URL(funscriptUrl);
       url.searchParams.append("apikey", apiKey);
-      this.funscriptUrl = url.toString();
+      authenticatedUrl = url.toString()
+    }
+
+    if (authenticatedUrl !== this.funscriptUrl) {
+      this.funscriptUrl = authenticatedUrl;
+      this.ackFunscriptUrl = false;
     }
 
     this.wsClient.send({
@@ -138,6 +144,7 @@ export class OssmInteractive implements IInteractiveClient {
 
   public async play(position: number) {
     this.debug("[interactive] play", position);
+    this.ensureUploadScript(position);
     this.wsClient.send({
       event: "play",
       properties: {
@@ -220,6 +227,9 @@ export class OssmInteractive implements IInteractiveClient {
     switch (message.ack) {
       case "open":
         this.toastSuccess(`OSSM Opened ${message.properties["title"]}`)
+        if (this.funscriptUrl === message.properties["url"]) {
+          this.ackFunscriptUrl = true;
+        }
         break;
       case "play":
         this.debug(`OSSM playing ${message.properties["currentTime"]}`)
@@ -251,6 +261,20 @@ export class OssmInteractive implements IInteractiveClient {
     this.videoPlayer.initializeHooks();
 
     this.wsClient.attemptReconnect(true);
+  }
+
+  ensureUploadScript(position: number) {
+    if (this.funscriptUrl && !this.ackFunscriptUrl) {
+      this.debug(`Resending funcscriptUrl ${this.funscriptUrl}`)
+      this.wsClient.send({
+        event: "open",
+        properties: {
+          funscriptUrl: this.funscriptUrl,
+          currentTime: position,
+          duration: this.videoPlayer.duration
+        }
+      });
+    }
   }
 
   toastSuccess(message: string) {

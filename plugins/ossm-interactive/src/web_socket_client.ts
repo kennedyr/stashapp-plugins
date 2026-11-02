@@ -56,9 +56,7 @@ export class WebSocketClient {
     this.onMessage = options.onMessage ?? (() => { });
     this.onError = options.onError ?? (() => { });
     this.onMaxReconnectAttempts = options.onMaxReconnectAttempts ?? (() => { });
-    this.pollStats = options.pollStats ?? (() => ({})),
-
-      this.connect();
+    this.pollStats = options.pollStats ?? (() => ({}));
   }
 
   public get connected() {
