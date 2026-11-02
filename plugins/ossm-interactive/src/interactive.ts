@@ -2,7 +2,7 @@ import { WebSocketClient } from "./web_socket_client";
 import { VideoPlayerInterface } from "./video_player";
 import { hackService } from './hack_service'
 import { IDeviceSettings, IInteractiveClient } from "StashTypes";
-import { Maybe, pathListener } from "@stashapp-plugins/shared";
+import { Maybe, pathListener, testCurrentPath } from "@stashapp-plugins/shared";
 
 export const PLUGIN_ID = "ossm-interactive";
 
@@ -67,22 +67,27 @@ export class OssmInteractive implements IInteractiveClient {
       }
     });
 
-    pathListener(/.*\/scenes\/(\d+)/, () => {
+    const scenePathRegex = /.*\/scenes\/(\d+)/;
+    pathListener(scenePathRegex, () => {
       this.ensureConnected();
       this.devicePlaying = false; // pause?
     });
 
     window.addEventListener("pagehide", () => {
       this.debug("[interactive] pagehide");
-      this.wsClient.close()
-      this.videoPlayer.deinitializeHooks()
+      testCurrentPath(scenePathRegex, () => {
+        this.wsClient.close();
+        this.videoPlayer.deinitializeHooks();
+      });
     });
 
     window.addEventListener("pageshow", (event) => {
       this.debug("[interactive] pageshow");
       if (event.persisted) {
-        this.wsClient.connect()
-        this.videoPlayer.initializeHooks()
+        testCurrentPath(scenePathRegex, () => {
+          this.wsClient.connect();
+          this.videoPlayer.initializeHooks();
+        });
       }
     });
   }

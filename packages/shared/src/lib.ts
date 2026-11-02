@@ -1,16 +1,23 @@
 export type Maybe<T> = T | null | undefined;
 
-export const pathListener = (pathRegExp: RegExp, callback: (path: string) => void) => {
-  const test_path = (path: string) => {
-    if (!pathRegExp || pathRegExp.test(path)) {
-      callback(path);
-    }
+const test_path = (pathRegex: RegExp, callback: (path: string) => void, path: string) => {
+  if (!pathRegex || pathRegex.test(path)) {
+    callback(path);
   }
-  test_path(window.location.pathname);
+};
+
+export const testCurrentPath = (pathRegex: RegExp, callback: (path: string) => void) => {
+  const test = test_path.bind(undefined, pathRegex, callback);
+  test(window.location.pathname);
+};
+
+export const pathListener = (pathRegex: RegExp, callback: (path: string) => void) => {
+  const test = test_path.bind(undefined, pathRegex, callback);
+  test(window.location.pathname);
 
   window.PluginApi.Event.addEventListener("stash:location", (e) => {
     const path = e.detail?.data.location.pathname ?? "";
-    test_path(path)
+    test(path);
   });
 };
 
