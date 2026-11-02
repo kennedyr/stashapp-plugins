@@ -62,6 +62,7 @@ export class OssmInteractive implements IInteractiveClient {
       },
       onConnect: () => {
         this.toastSuccess('OSSM Connected');
+        this.ensureUploadScript();
       },
       pollStats: () => {
         return this.getStats();
@@ -272,14 +273,14 @@ export class OssmInteractive implements IInteractiveClient {
     this.wsClient.attemptReconnect(true);
   }
 
-  ensureUploadScript(position: number) {
+  ensureUploadScript(position?: number) {
     if (this.funscriptUrl && !this.ackFunscriptUrl) {
       this.debug(`Resending funcscriptUrl ${this.funscriptUrl}`)
       this.wsClient.send({
         event: "open",
         properties: {
           funscriptUrl: this.funscriptUrl,
-          currentTime: position,
+          currentTime: position ?? this.videoPlayer.currentTime,
           duration: this.videoPlayer.duration
         }
       });
